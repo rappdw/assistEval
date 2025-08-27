@@ -1,0 +1,25 @@
+# Provider configuration for AI assistant evaluation
+# TODO: Implement in Stage 3 - Schema & Configuration Foundation
+
+providers:
+  - name: chatgpt
+    adapter: chatgpt
+    options:
+      temperature: 0          # Deterministic responses
+      max_tokens: 1200       # Response length limit
+      seed: 42               # Reproducibility seed
+      response_format: json  # Enforce JSON output when supported
+    capabilities:
+      web: forbidden          # No web access for offline tasks
+      tools: []              # No additional tools
+      json_required: true    # Require JSON response format
+
+  - name: copilot
+    adapter: copilot_manual
+    options:
+      display_format: formatted  # How to display prompts
+      timeout_seconds: 300      # Manual response timeout
+    capabilities:
+      web: forbidden          # No web access for offline tasks
+      tools: []              # No additional tools
+      json_required: true    # Require JSON response format

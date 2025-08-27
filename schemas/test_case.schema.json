@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "test_case.schema.json",
+  "title": "Test Case Schema",
+  "description": "JSON schema for evaluation test case definitions",
+  "type": "object",
+  "required": ["id", "name", "category", "capability_profile", "prompt", "expectation", "scoring"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the test case",
+      "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+\\.[a-z0-9_]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable name for the test"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["offline", "online"],
+      "description": "Test category determining capability requirements"
+    },
+    "capability_profile": {
+      "type": "object",
+      "required": ["web", "json_required"],
+      "properties": {
+        "web": {
+          "type": "string",
+          "enum": ["forbidden", "allowed", "required"],
+          "description": "Web access requirement"
+        },
+        "json_required": {
+          "type": "boolean",
+          "description": "Whether JSON response format is required"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 1,
+          "description": "Number of retry attempts allowed"
+        }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["system", "user"],
+      "properties": {
+        "system": {
+          "type": "string",
+          "description": "System prompt with constraints and context"
+        },
+        "user": {
+          "type": "string",
+          "description": "User prompt with the evaluation task"
+        }
+      }
+    },
+    "expectation": {
+      "type": "object",
+      "required": ["schema_name", "fields"],
+      "properties": {
+        "schema_name": {
+          "type": "string",
+          "description": "Name of response schema to validate against"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "type"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "JSONPath expression for field extraction"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["string", "number", "integer", "boolean", "array", "object"],
+                "description": "Expected field type"
+              }
+            }
+          }
+        }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "required": ["evaluator", "config"],
+      "properties": {
+        "evaluator": {
+          "type": "string",
+          "description": "Name of evaluator to use for scoring"
+        },
+        "config": {
+          "type": "object",
+          "description": "Evaluator-specific configuration"
+        }
+      }
+    }
+  }
+}

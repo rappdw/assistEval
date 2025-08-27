@@ -1,0 +1,42 @@
+# Task 2: DLP Regex for U.S. SSN - Pattern Validation
+# TODO: Implement in Stage 10 - Sample Tests & Fixtures
+
+id: "offline.task2.ssn_regex"
+name: "Task 2 — DLP Regex for U.S. SSN"
+category: "offline"
+capability_profile:
+  web: "forbidden"
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+    Do not fabricate sources. Respond only in valid JSON format.
+  user: |
+    # TODO: Add complete task specification in Stage 10
+    # - Include ssn_validation_lines.txt data inline
+    # - Specify regex pattern requirements
+    # - Define SSN format constraints (no 000/666/9xx, no 00, no 0000)
+    # - Require anchored pattern with proper grouping
+
+expectation:
+  schema_name: "task2_ssn_regex"
+  fields:
+    - path: "$.regex_pattern"
+      type: "string"
+    - path: "$.matching_lines"
+      type: "array"
+
+scoring:
+  evaluator: "regex_match"
+  config:
+    timeout_ms: 100
+    weights:
+      regex_validity: 18
+      line_matches: 12
+    validation_rules:
+      - "anchored_pattern"
+      - "area_code_constraints"
+      - "group_constraints"
+      - "serial_constraints"

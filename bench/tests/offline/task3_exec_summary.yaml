@@ -1,0 +1,50 @@
+# Task 3: Executive Summary - Structure and Tone Validation
+# TODO: Implement in Stage 10 - Sample Tests & Fixtures
+
+id: "offline.task3.exec_summary"
+name: "Task 3 — Executive Summary"
+category: "offline"
+capability_profile:
+  web: "forbidden"
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+    Do not fabricate sources. Respond only in valid JSON format.
+  user: |
+    # TODO: Add complete task specification in Stage 10
+    # - Include source material for summarization
+    # - Specify executive summary requirements
+    # - Define title constraints (≤6 words)
+    # - Require 120-160 word summary with exactly 3 bullets
+    # - Specify tone requirements (no hype terms)
+
+expectation:
+  schema_name: "task3_exec_summary"
+  fields:
+    - path: "$.title"
+      type: "string"
+    - path: "$.summary"
+      type: "string"
+    - path: "$.key_points"
+      type: "array"
+
+scoring:
+  evaluator: "exec_summary"
+  config:
+    structure_weights:
+      title_length: 3      # ≤6 words
+      word_count: 3        # 120-160 words
+      bullet_count: 3      # exactly 3 bullets
+      schema_compliance: 3 # JSON format
+    tone_weights:
+      hype_terms: 4        # avoid denylist terms
+      sentence_length: 4   # avg ≤24 words
+    requirements:
+      max_title_words: 6
+      min_summary_words: 120
+      max_summary_words: 160
+      required_bullets: 3
+      max_avg_sentence_length: 24

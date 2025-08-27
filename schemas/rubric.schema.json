@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rubric.schema.json",
+  "title": "Scoring Rubric Schema",
+  "description": "JSON schema for evaluation scoring rubric definitions",
+  "type": "object",
+  "required": ["weights", "scoring"],
+  "properties": {
+    "weights": {
+      "type": "object",
+      "description": "Task weights and point allocations",
+      "patternProperties": {
+        "^task[0-9]+_[a-z_]+$": {
+          "type": "object",
+          "required": ["total"],
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Total points for this task"
+            }
+          },
+          "additionalProperties": {
+            "oneOf": [
+              {"type": "integer", "minimum": 0},
+              {"type": "object"}
+            ]
+          }
+        }
+      },
+      "properties": {
+        "stability_bonus": {
+          "type": "object",
+          "required": ["max_points"],
+          "properties": {
+            "max_points": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10,
+              "description": "Maximum stability bonus points"
+            },
+            "consistency_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Required consistency for full bonus"
+            }
+          }
+        }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "properties": {
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Numeric tolerance for floating point comparisons"
+        },
+        "round_to": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Decimal places for rounding"
+        }
+      }
+    }
+  }
+}

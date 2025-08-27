@@ -1,0 +1,57 @@
+# Task 1: Metrics from CSV - Phishing Detection Classification
+# TODO: Implement in Stage 10 - Sample Tests & Fixtures
+
+id: "offline.task1.metrics"
+name: "Task 1 — Metrics from CSV"
+category: "offline"
+capability_profile:
+  web: "forbidden"
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+    Do not fabricate sources. Respond only in valid JSON format.
+  user: |
+    # TODO: Add complete task specification in Stage 10
+    # - Include phishing_sample.csv data inline
+    # - Specify required JSON output schema
+    # - Define precision, recall, F1, accuracy calculations
+    # - Require confusion matrix (tp, fp, fn, tn)
+
+expectation:
+  schema_name: "task1_metrics"
+  fields:
+    - path: "$.task1_data_metrics.precision"
+      type: "number"
+    - path: "$.task1_data_metrics.recall"
+      type: "number"
+    - path: "$.task1_data_metrics.f1"
+      type: "number"
+    - path: "$.task1_data_metrics.accuracy"
+      type: "number"
+    - path: "$.task1_data_metrics.confusion_matrix.tp"
+      type: "integer"
+    - path: "$.task1_data_metrics.confusion_matrix.fp"
+      type: "integer"
+    - path: "$.task1_data_metrics.confusion_matrix.fn"
+      type: "integer"
+    - path: "$.task1_data_metrics.confusion_matrix.tn"
+      type: "integer"
+
+scoring:
+  evaluator: "metrics_csv"
+  config:
+    tolerance: 0.0005
+    round_to: 4
+    weights:
+      precision: 6
+      recall: 6
+      f1: 6
+      accuracy: 6
+      confusion_matrix:
+        tp: 3
+        fp: 3
+        fn: 3
+        tn: 3

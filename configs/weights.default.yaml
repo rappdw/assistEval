@@ -1,0 +1,45 @@
+# Default scoring weights for evaluation tasks
+# TODO: Implement in Stage 3 - Schema & Configuration Foundation
+
+# Task weights (total 100 points + 5 bonus)
+weights:
+  # Task 1: Metrics from CSV (40 points total)
+  task1_metrics:
+    total: 40
+    precision: 6      # Precision metric accuracy
+    recall: 6         # Recall metric accuracy
+    f1: 6            # F1 score accuracy
+    accuracy: 6       # Overall accuracy metric
+    confusion_matrix: # Confusion matrix components (12 points total)
+      tp: 3          # True positives
+      fp: 3          # False positives
+      fn: 3          # False negatives
+      tn: 3          # True negatives
+
+  # Task 2: SSN Regex (30 points total)
+  task2_ssn_regex:
+    total: 30
+    regex_validity: 18  # Pattern validity and constraints
+    line_matches: 12    # Correct line matching (1pt per line)
+
+  # Task 3: Executive Summary (20 points total)
+  task3_exec_summary:
+    total: 20
+    structure: 12       # Title, word count, bullets, schema (3pts each)
+    tone_clarity: 8     # Tone heuristics and clarity
+
+  # Optional: Deep Research (10 points total)
+  deep_research:
+    total: 10
+    plan_quality: 5     # Plan structure and sequencing
+    source_quality: 5   # Source recency and verification
+
+# Stability bonus (0-5 points)
+stability_bonus:
+  max_points: 5
+  consistency_threshold: 0.95  # Required consistency for full bonus
+
+# Scoring configuration
+scoring:
+  tolerance: 0.0005     # Numeric tolerance for metrics
+  round_to: 4          # Decimal places for rounding

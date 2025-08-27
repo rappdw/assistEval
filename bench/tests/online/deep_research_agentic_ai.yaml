@@ -1,0 +1,58 @@
+# Deep Research: Agentic AI - Multi-step Research Plan
+# TODO: Implement in Stage 12 - Online Features & Enhancements (Phase 2)
+
+id: "online.deep_research.agentic_ai"
+name: "Deep Research — Agentic AI"
+category: "online"
+capability_profile:
+  web: "required"
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Browsing is required for this task.
+    Provide sources with dates. If browsing is disabled, mark sources as placeholders and state limitations.
+    Respond only in valid JSON format.
+  user: |
+    # TODO: Add complete task specification in Stage 12
+    # - Define agentic AI research requirements
+    # - Specify 7-10 step research plan structure
+    # - Require risk register with likelihood/impact scoring
+    # - Mandate 5-8 sources with recency requirements
+    # - Include assumptions and limitations fields
+
+expectation:
+  schema_name: "deep_research"
+  fields:
+    - path: "$.research_plan"
+      type: "array"
+    - path: "$.risk_register"
+      type: "array"
+    - path: "$.sources"
+      type: "array"
+    - path: "$.assumptions"
+      type: "array"
+    - path: "$.limitations"
+      type: "array"
+
+scoring:
+  evaluator: "deep_research"
+  config:
+    plan_requirements:
+      min_steps: 7
+      max_steps: 10
+      required_fields: ["goal", "method", "deliverable"]
+    risk_requirements:
+      min_risks: 5
+      likelihood_range: [1, 5]
+      impact_range: [1, 5]
+      required_fields: ["risk", "likelihood", "impact", "mitigation"]
+    source_requirements:
+      min_sources: 5
+      max_sources: 8
+      min_recent_sources: 3
+      recency_years: 3
+    weights:
+      plan_quality: 5
+      source_quality: 5
