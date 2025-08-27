@@ -17,6 +17,12 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from bench.adapters import create_provider
 from bench.adapters.base import Provider, ProviderError
+from bench.core.validators import (
+    ContentNormalizer,
+    FieldExtractor,
+    SchemaValidator,
+    StructuralValidator,
+)
 
 
 class RunnerError(Exception):
@@ -57,6 +63,12 @@ class ExecutionContext:
         self.providers_config: dict[str, Any] = {}
         self.weights_config: dict[str, Any] = {}
         self.matrix_config: dict[str, Any] = {}
+
+        # Initialize validation components
+        self.schema_validator = SchemaValidator(config_dir / "schemas")
+        self.field_extractor = FieldExtractor()
+        self.structural_validator = StructuralValidator()
+        self.content_normalizer = ContentNormalizer()
 
     def load_configurations(
         self,

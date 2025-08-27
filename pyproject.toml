@@ -26,6 +26,7 @@ dependencies = [
     "jsonpath-ng>=1.6.0",
     "click>=8.0.0",
     "rich>=13.0.0",
+    "pre-commit>=4.3.0",
 ]
 
 [project.optional-dependencies]
@@ -149,4 +150,12 @@ filterwarnings = [
     "error",
     "ignore::UserWarning",
     "ignore::DeprecationWarning",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "types-jsonschema>=4.25.1.20250822",
+    "types-pyyaml>=6.0.12.20250822",
 ]
