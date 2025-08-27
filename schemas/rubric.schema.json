@@ -2,68 +2,154 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "rubric.schema.json",
   "title": "Scoring Rubric Schema",
-  "description": "JSON schema for evaluation scoring rubric definitions",
+  "description": "Schema for validating scoring rubric and weight configurations",
   "type": "object",
-  "required": ["weights", "scoring"],
   "properties": {
-    "weights": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Schema version (e.g., '1.0')"
+    },
+    "total_points": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum possible score across all tasks"
+    },
+    "tasks": {
       "type": "object",
-      "description": "Task weights and point allocations",
-      "patternProperties": {
-        "^task[0-9]+_[a-z_]+$": {
+      "properties": {
+        "task1_metrics": {
           "type": "object",
-          "required": ["total"],
           "properties": {
             "total": {
               "type": "integer",
-              "minimum": 1,
-              "description": "Total points for this task"
+              "minimum": 1
+            },
+            "precision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recall": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "f1": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "accuracy": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "confusion_matrix": {
+              "type": "object",
+              "properties": {
+                "tp": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fp": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fn": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tn": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": ["tp", "fp", "fn", "tn"],
+              "additionalProperties": false
             }
           },
-          "additionalProperties": {
-            "oneOf": [
-              {"type": "integer", "minimum": 0},
-              {"type": "object"}
-            ]
-          }
+          "required": ["total", "precision", "recall", "f1", "accuracy", "confusion_matrix"],
+          "additionalProperties": false
+        },
+        "task2_ssn_regex": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "regex_validity": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "line_matches": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["total", "regex_validity", "line_matches"],
+          "additionalProperties": false
+        },
+        "task3_exec_summary": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "structure": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tone": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["total", "structure", "tone"],
+          "additionalProperties": false
+        },
+        "deep_research": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "plan_quality": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "source_quality": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["total", "plan_quality", "source_quality"],
+          "additionalProperties": false
         }
       },
-      "properties": {
-        "stability_bonus": {
-          "type": "object",
-          "required": ["max_points"],
-          "properties": {
-            "max_points": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 10,
-              "description": "Maximum stability bonus points"
-            },
-            "consistency_threshold": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "Required consistency for full bonus"
-            }
-          }
-        }
-      }
+      "required": ["task1_metrics", "task2_ssn_regex", "task3_exec_summary"],
+      "additionalProperties": false
     },
-    "scoring": {
+    "stability_bonus": {
       "type": "object",
       "properties": {
-        "tolerance": {
-          "type": "number",
-          "minimum": 0,
-          "description": "Numeric tolerance for floating point comparisons"
+        "enabled": {
+          "type": "boolean"
         },
-        "round_to": {
+        "max_points": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 10,
-          "description": "Decimal places for rounding"
+          "maximum": 10
+        },
+        "consistency_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
-      }
+      },
+      "required": ["enabled", "max_points"],
+      "additionalProperties": false
     }
-  }
+  },
+  "required": ["version", "total_points", "tasks", "stability_bonus"],
+  "additionalProperties": false
 }

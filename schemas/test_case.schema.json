@@ -2,18 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "test_case.schema.json",
   "title": "Test Case Schema",
-  "description": "JSON schema for evaluation test case definitions",
+  "description": "Schema for validating evaluation test case definitions",
   "type": "object",
-  "required": ["id", "name", "category", "capability_profile", "prompt", "expectation", "scoring"],
   "properties": {
     "id": {
       "type": "string",
-      "description": "Unique identifier for the test case",
-      "pattern": "^[a-z0-9_]+\\.[a-z0-9_]+\\.[a-z0-9_]+$"
+      "pattern": "^(offline|online)\\.[a-z0-9_]+\\.[a-z0-9_]+$",
+      "description": "Unique test identifier (e.g., 'offline.task1.metrics')"
     },
     "name": {
       "type": "string",
-      "description": "Human-readable name for the test"
+      "minLength": 1,
+      "description": "Human-readable test name"
     },
     "category": {
       "type": "string",

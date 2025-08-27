@@ -1,25 +1,27 @@
-# Provider configuration for AI assistant evaluation
-# TODO: Implement in Stage 3 - Schema & Configuration Foundation
+version: "1.0"
+description: "Provider configuration for ChatGPT vs Copilot evaluation"
 
 providers:
-  - name: chatgpt
-    adapter: chatgpt
+  chatgpt:
+    adapter: "chatgpt"
     options:
-      temperature: 0          # Deterministic responses
-      max_tokens: 1200       # Response length limit
-      seed: 42               # Reproducibility seed
-      response_format: json  # Enforce JSON output when supported
+      model: "gpt-4"
+      temperature: 0
+      max_tokens: 1200
+      seed: 42
+      response_format: "json_object"
+      timeout_seconds: 60
     capabilities:
-      web: forbidden          # No web access for offline tasks
+      web: "forbidden"        # Default for offline tasks
       tools: []              # No additional tools
       json_required: true    # Require JSON response format
 
-  - name: copilot
-    adapter: copilot_manual
+  copilot_manual:
+    adapter: "copilot_manual"
     options:
-      display_format: formatted  # How to display prompts
-      timeout_seconds: 300      # Manual response timeout
+      display_format: "markdown"  # How to display prompts
+      timeout_seconds: 300        # Manual response timeout
     capabilities:
-      web: forbidden          # No web access for offline tasks
-      tools: []              # No additional tools
-      json_required: true    # Require JSON response format
+      web: "forbidden"          # No web access for offline tasks
+      tools: []                # No additional tools
+      json_required: true      # Require JSON response format

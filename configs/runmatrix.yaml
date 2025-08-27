@@ -1,42 +1,39 @@
-# Test execution matrix configuration
-# TODO: Implement in Stage 3 - Schema & Configuration Foundation
+version: "1.0"
+description: "Default evaluation matrix for ChatGPT vs Copilot comparison"
 
-# Execution matrix: provider × test set combinations
 matrix:
-  # ChatGPT offline tests (3 repetitions for stability)
-  - provider: chatgpt
-    test_set: offline
-    repetitions: 3
-    tests:
-      - tests/offline/task1_metrics.yaml
-      - tests/offline/task2_ssn_regex.yaml
-      - tests/offline/task3_exec_summary.yaml
+  - provider: "chatgpt"
+    test_set: "offline"
+    repetitions: 3          # For stability analysis
+    parallel: false         # Sequential execution
 
-  # Copilot offline tests (3 repetitions for stability)
-  - provider: copilot
-    test_set: offline
-    repetitions: 3
-    tests:
-      - tests/offline/task1_metrics.yaml
-      - tests/offline/task2_ssn_regex.yaml
-      - tests/offline/task3_exec_summary.yaml
+  - provider: "copilot_manual"
+    test_set: "offline"
+    repetitions: 3          # For stability analysis
+    parallel: false         # Manual input required
 
-  # Optional: Online tests (single repetition)
-  - provider: chatgpt
-    test_set: online
-    repetitions: 1
-    tests:
-      - tests/online/deep_research_agentic_ai.yaml
+  - provider: "chatgpt"
+    test_set: "online"      # Optional deep research task
+    repetitions: 1          # Single run for online tasks
+    parallel: false
 
-  - provider: copilot
-    test_set: online
-    repetitions: 1
-    tests:
-      - tests/online/deep_research_agentic_ai.yaml
+  - provider: "copilot_manual"
+    test_set: "online"      # Optional deep research task
+    repetitions: 1          # Single run for online tasks
+    parallel: false
 
-# Global settings
-settings:
-  parallel_execution: false    # Run tests sequentially for now
-  continue_on_error: true     # Continue matrix if individual test fails
-  save_raw_responses: true    # Store raw provider responses
-  generate_report: true       # Auto-generate report after completion
+test_sets:
+  offline:
+    - "tests/offline/task1_metrics.yaml"
+    - "tests/offline/task2_ssn_regex.yaml"
+    - "tests/offline/task3_exec_summary.yaml"
+
+  online:
+    - "tests/online/deep_research_agentic_ai.yaml"
+
+global_settings:
+  output_dir: "results"
+  save_raw_responses: true
+  save_parsed_responses: true
+  generate_report: true
+  fail_fast: false         # Continue on individual test failures
