@@ -3,25 +3,25 @@ description: "Provider configuration for ChatGPT vs Copilot evaluation"
 
 providers:
   chatgpt:
-    adapter: "chatgpt"
-    options:
-      model: "gpt-4"
-      temperature: 0
-      max_tokens: 1200
-      seed: 42
-      response_format: "json_object"
-      timeout_seconds: 60
+    type: "chatgpt"
+    model: "gpt-4"
+    temperature: 0
+    max_tokens: 1200
+    seed: 42
+    response_format: "json_object"
+    timeout_seconds: 60
     capabilities:
-      web: "forbidden"        # Default for offline tasks
-      tools: []              # No additional tools
-      json_required: true    # Require JSON response format
+      web_access: false        # Default for offline tasks
+      tools_allowed: false     # No additional tools
+      json_required: true      # Require JSON response format
+      max_retries: 3
 
   copilot_manual:
-    adapter: "copilot_manual"
-    options:
-      display_format: "markdown"  # How to display prompts
-      timeout_seconds: 300        # Manual response timeout
+    type: "copilot_manual"
+    display_format: "rich"      # Use rich formatting for display
+    timeout: 300               # Manual response timeout (5 minutes)
     capabilities:
-      web: "forbidden"          # No web access for offline tasks
-      tools: []                # No additional tools
+      web_access: false        # No web access for offline tasks
+      tools_allowed: false     # No additional tools
       json_required: true      # Require JSON response format
+      max_retries: 1

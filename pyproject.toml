@@ -118,6 +118,14 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 
+# Ignore missing imports for external packages without type stubs
+[[tool.mypy.overrides]]
+module = [
+    "rich.*",
+    "openai.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
