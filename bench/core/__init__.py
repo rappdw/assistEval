@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bench.core.reporting import Reporter
-    from bench.core.runner import Runner
+    from bench.core.runner import TestRunner
     from bench.core.scoring import Scorer
 
-__all__ = ["Runner", "Scorer", "Reporter"]
+__all__ = ["TestRunner", "Scorer", "Reporter"]

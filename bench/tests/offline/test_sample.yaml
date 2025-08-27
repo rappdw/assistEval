@@ -1,0 +1,37 @@
+id: "offline.test.sample"
+name: "Sample Test Case"
+category: "offline"
+capability_profile:
+  web_access: false
+  json_required: true
+  tools_allowed: false
+  max_retries: 1
+
+prompt:
+  system: |
+    You are a helpful assistant. Respond only in valid JSON format.
+    Do not browse the web or use external tools.
+  user: |
+    Please respond with a simple JSON object containing:
+    - "message": "Hello, World!"
+    - "status": "success"
+    - "timestamp": current timestamp as string
+
+expectation:
+  schema_name: "sample_response"
+  fields:
+    - path: $.message
+      type: string
+    - path: $.status
+      type: string
+    - path: $.timestamp
+      type: string
+
+scoring:
+  evaluator: sample_evaluator
+  config:
+    required_fields: ["message", "status", "timestamp"]
+    weights:
+      message: 5
+      status: 3
+      timestamp: 2

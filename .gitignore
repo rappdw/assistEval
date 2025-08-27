@@ -173,3 +173,5 @@ Thumbs.db              # Windows files
 .env.production
 secrets.yaml
 api_keys.json
+
+scratchpad.md
