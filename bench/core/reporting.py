@@ -249,9 +249,7 @@ class MarkdownReportGenerator:
             consistency = (
                 "High"
                 if provider_score.stability_bonus >= 4.0
-                else "Medium"
-                if provider_score.stability_bonus >= 2.0
-                else "Low"
+                else ("Medium" if provider_score.stability_bonus >= 2.0 else "Low")
             )
             stability_section += (
                 f"| {provider_name} | {provider_score.stability_bonus:.1f}/5.0 | "
@@ -677,9 +675,7 @@ class ReportAggregator:
                 trend_direction = (
                     "improving"
                     if last_score > first_score
-                    else "declining"
-                    if last_score < first_score
-                    else "stable"
+                    else ("declining" if last_score < first_score else "stable")
                 )
 
                 trends[provider_name] = {

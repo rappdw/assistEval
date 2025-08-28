@@ -238,7 +238,7 @@ class ScoringEngine:
                                         sub_weight
                                     )
                                     weighted_sub_scores[
-                                        f"{component}_{sub_component}"
+                                        f"confusion_matrix_{sub_component}"
                                     ] = weighted_value
                                     nested_total += weighted_value
                     # Fallback to details if sub_scores doesn't have dict data
@@ -255,7 +255,7 @@ class ScoringEngine:
                                         sub_weight
                                     )
                                     weighted_sub_scores[
-                                        f"{component}_{sub_component}"
+                                        f"confusion_matrix_{sub_component}"
                                     ] = weighted_value
                                     nested_total += weighted_value
 
