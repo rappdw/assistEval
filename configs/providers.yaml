@@ -4,9 +4,9 @@ description: "Provider configuration for ChatGPT vs Copilot evaluation"
 providers:
   chatgpt:
     type: "chatgpt"
-    model: "gpt-4"
-    temperature: 0
-    max_tokens: 1200
+    model: "gpt-5"
+    # temperature: 0  # GPT-5 only supports default temperature (1)
+    max_completion_tokens: 4000
     seed: 42
     response_format: "json_object"
     timeout_seconds: 60
@@ -16,9 +16,19 @@ providers:
       json_required: true      # Require JSON response format
       max_retries: 3
 
+  chatgpt_manual:
+    type: "chatgpt_manual"
+    display_format: "plain"     # Use plain text for easy copy/paste
+    timeout: 300               # Manual response timeout (5 minutes)
+    capabilities:
+      web_access: false        # No web access for offline tasks
+      tools_allowed: false     # No additional tools
+      json_required: true      # Require JSON response format
+      max_retries: 1
+
   copilot_manual:
     type: "copilot_manual"
-    display_format: "rich"      # Use rich formatting for display
+    display_format: "plain"     # Use plain text for easy copy/paste
     timeout: 300               # Manual response timeout (5 minutes)
     capabilities:
       web_access: false        # No web access for offline tasks
