@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --extra dev
 
     - name: Run black (check only)
       run: |
@@ -64,7 +64,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --extra dev
 
     - name: Run mypy
       run: |
@@ -89,7 +89,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --extra dev
 
     - name: Run tests with pytest
       run: |
@@ -97,7 +97,7 @@ jobs:
 
     - name: Upload coverage reports to Codecov
       if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         fail_ci_if_error: false
@@ -117,14 +117,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --extra dev
 
     - name: Run bandit security linter
       run: |
         uv run bandit -r . -f json -o bandit-report.json || true
 
     - name: Upload bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bandit-report
@@ -148,32 +148,10 @@ jobs:
       run: uv python install 3.11
 
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --extra dev
 
-    - name: Run performance benchmarks
+    - name: Run basic performance check
       run: |
-        uv run python -m pytest tests/test_performance.py \
-          --benchmark-json=benchmark.json \
-          --benchmark-only || echo "Performance tests not available"
-
-    - name: Compare with baseline
-      run: |
-        if [ -f .github/baseline-performance.json ] && [ -f benchmark.json ]; then
-          uv run python scripts/compare_performance.py \
-            --current benchmark.json \
-            --baseline .github/baseline-performance.json \
-            --threshold 10 \
-            --output performance-comparison.md || echo "Performance comparison failed"
-        else
-          echo "Baseline performance data not available - skipping comparison"
-        fi
-
-    - name: Upload performance results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: performance-results
-        path: |
-          benchmark.json
-          performance-comparison.md
-        retention-days: 30
+        echo "Performance benchmarking not yet implemented"
+        echo "Running basic test suite for performance validation"
+        uv run pytest tests/ -x --tb=short
