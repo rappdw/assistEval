@@ -9,6 +9,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from bench.core.reporting import Reporter
     from bench.core.runner import TestRunner
-    from bench.core.scoring import Scorer
+    from bench.core.scoring import ScoringEngine
 
-__all__ = ["TestRunner", "Scorer", "Reporter"]
+__all__ = ["TestRunner", "ScoringEngine", "Reporter"]

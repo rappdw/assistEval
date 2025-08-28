@@ -18,6 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from bench.adapters import create_provider
 from bench.adapters.base import Provider, ProviderError
 from bench.core.evaluators import EvaluationResult, EvaluatorRegistry
+from bench.core.scoring import ProviderScore, ScoreManager, ScoringEngine, WeightConfig
 from bench.core.validators import (
     ContentNormalizer,
     FieldExtractor,
@@ -281,11 +282,26 @@ class TestRunner:
         self.console = Console()
         self.logger = logging.getLogger(__name__)
 
+        # Initialize scoring components
+        self.scoring_engine: ScoringEngine | None = None
+        self.score_manager = ScoreManager(results_dir=Path("results"))
+
         # Setup logging
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
+
+    def _initialize_scoring_engine(self) -> None:
+        """Initialize scoring engine with loaded weight configuration."""
+        try:
+            weights_path = self.context.config_dir / "weights.default.yaml"
+            weight_config = WeightConfig.load_from_file(weights_path)
+            self.scoring_engine = ScoringEngine(weight_config)
+            self.logger.info("Scoring engine initialized successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize scoring engine: {e}")
+            self.scoring_engine = None
 
     def run_single(
         self, provider_name: str, test_path: Path, repetitions: int = 1
@@ -304,6 +320,9 @@ class TestRunner:
             # Load configurations
             self.context.load_configurations()
 
+            # Initialize scoring engine
+            self._initialize_scoring_engine()
+
             # Create run directory
             run_dir = self.results_collector.create_run_directory()
             self.results_collector.save_config_snapshot(self.context)
@@ -316,6 +335,7 @@ class TestRunner:
 
             # Execute test repetitions
             results = []
+            evaluation_results = []
             for rep in range(repetitions):
                 self.console.print(
                     f"[blue]Running {test_def['name']} with {provider_name} "
@@ -324,6 +344,21 @@ class TestRunner:
 
                 result = self._execute_single_test(provider, test_def, rep)
                 results.append(result)
+
+                # Collect evaluation results for scoring
+                if "evaluation" in result and result["evaluation"]:
+                    eval_result = self._create_evaluation_result_from_dict(
+                        result["evaluation"], test_def["id"]
+                    )
+                    if eval_result:
+                        evaluation_results.append(eval_result)
+
+            # Calculate provider scores if scoring engine is available
+            provider_score = None
+            if self.scoring_engine and evaluation_results:
+                provider_score = self._calculate_provider_scores(
+                    evaluation_results, provider_name, run_dir
+                )
 
             # Save execution metadata
             metadata = {
@@ -335,6 +370,16 @@ class TestRunner:
                 "timestamp": datetime.now().isoformat(),
                 "results": results,
             }
+
+            # Add scoring information if available
+            if provider_score:
+                metadata["scoring"] = {
+                    "total_score": provider_score.total_score,
+                    "max_score": provider_score.max_score,
+                    "final_score": provider_score.final_score,
+                    "score_percentage": provider_score.score_percentage,
+                    "stability_bonus": provider_score.stability_bonus,
+                }
 
             self.results_collector.save_execution_metadata(metadata)
 
@@ -362,6 +407,9 @@ class TestRunner:
                 self.context.load_configurations(matrix_path=matrix_path)
             else:
                 self.context.load_configurations()
+
+            # Initialize scoring engine
+            self._initialize_scoring_engine()
 
             # Create run directory
             run_dir = self.results_collector.create_run_directory()
@@ -730,3 +778,68 @@ class TestRunner:
 
         except Exception as e:
             self.logger.error(f"Failed to save evaluation result: {e}")
+
+    def _create_evaluation_result_from_dict(
+        self, eval_dict: dict[str, Any], task_id: str
+    ) -> EvaluationResult | None:
+        """Create EvaluationResult from dictionary data.
+
+        Args:
+            eval_dict: Dictionary containing evaluation data
+            task_id: Task identifier
+
+        Returns:
+            EvaluationResult instance or None if creation fails
+        """
+        try:
+            return EvaluationResult(
+                task_id=task_id,
+                total_score=eval_dict.get("total_score", 0.0),
+                max_score=eval_dict.get("max_score", 0.0),
+                sub_scores=eval_dict.get("sub_scores", {}),
+                details=eval_dict.get("details", {}),
+                errors=eval_dict.get("errors", []),
+                warnings=eval_dict.get("warnings", []),
+                metadata=eval_dict.get("metadata", {}),
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to create EvaluationResult: {e}")
+            return None
+
+    def _calculate_provider_scores(
+        self,
+        evaluation_results: list[EvaluationResult],
+        provider_name: str,
+        run_dir: Path,
+    ) -> ProviderScore | None:
+        """Calculate and save provider scores.
+
+        Args:
+            evaluation_results: List of evaluation results
+            provider_name: Name of the provider
+            run_dir: Current run directory
+        """
+        try:
+            if not self.scoring_engine:
+                self.logger.warning("No scoring engine available for score calculation")
+                return None
+
+            # Calculate provider score
+            provider_score = self.scoring_engine.calculate_provider_score(
+                evaluation_results, provider_name
+            )
+
+            # Save provider score
+            self.score_manager.save_provider_score(provider_score, run_dir)
+
+            self.console.print(
+                f"[green]✓ Provider score calculated: "
+                f"{provider_score.final_score:.2f}/{provider_score.max_score:.2f} "
+                f"({provider_score.score_percentage:.1f}%)[/green]"
+            )
+
+            return provider_score
+
+        except Exception as e:
+            self.logger.error(f"Failed to calculate provider scores: {e}")
+            return None
