@@ -1,27 +1,27 @@
-"""Command line interface for the evaluation harness."""
+"""Command line interface entry point for the evaluation harness."""
 
-from typing import Any
-
-import click
-
-
-@click.group()
-@click.version_option(version="0.1.0")
-def main() -> Any:
-    """ChatGPT vs Microsoft Copilot Evaluation Harness."""
-    pass
+import sys
+from pathlib import Path
 
 
-@main.command()
-def run() -> None:
-    """Run evaluation benchmarks."""
-    click.echo("Benchmark runner not yet implemented.")
+def main() -> None:
+    """Entry point that delegates to the actual CLI implementation."""
+    # Add the scripts directory to the path so we can import the CLI
+    scripts_dir = Path(__file__).parent.parent / "scripts"
+    sys.path.insert(0, str(scripts_dir))
 
+    # Import and run the actual CLI
+    try:
+        import subprocess
 
-@main.command()
-def validate() -> None:
-    """Validate test definitions."""
-    click.echo("Test validator not yet implemented.")
+        bench_script = scripts_dir / "bench.py"
+        result = subprocess.run([sys.executable, str(bench_script)] + sys.argv[1:])
+        sys.exit(result.returncode)
+    except Exception as e:
+        import logging
+
+        logging.error(f"Error running CLI: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

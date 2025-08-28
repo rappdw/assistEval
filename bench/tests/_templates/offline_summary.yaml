@@ -1,0 +1,79 @@
+# Template for Offline Executive Summary Task - Structure and Tone Validation
+# Copy this file and customize for your specific executive summary test case
+#
+# This template is for tasks that require writing structured summaries with
+# specific word counts, formatting, and tone requirements
+
+id: "offline.task_name.exec_summary"
+name: "Task Name — Executive Summary"
+category: "offline"
+capability_profile:
+  web: "forbidden"    # offline tasks cannot use web
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+    Do not fabricate sources. Respond only in valid JSON format.
+  user: |
+    Write an executive summary about [TOPIC_DESCRIPTION].
+
+    Requirements:
+    - Title: Maximum [MAX_TITLE_WORDS] words
+    - Summary: [MIN_WORDS]-[MAX_WORDS] words (excluding title and bullets)
+    - Exactly [BULLET_COUNT] bullet points highlighting key insights
+    - Professional tone, avoid hype terms
+    - Concise sentences (average ≤[MAX_SENTENCE_LENGTH] words)
+
+    Return in JSON format:
+    {
+      "task3_exec_summary": {
+        "title": "Your Title Here",
+        "summary": "Your summary paragraph here...",
+        "key_points": [
+          "First key insight",
+          "Second key insight",
+          "Third key insight"
+        ]
+      }
+    }
+
+expectation:
+  schema_name: "task3_exec_summary"
+  fields:
+    - path: "$.task3_exec_summary.title"
+      type: "string"
+    - path: "$.task3_exec_summary.summary"
+      type: "string"
+    - path: "$.task3_exec_summary.key_points"
+      type: "array"
+
+scoring:
+  evaluator: "exec_summary"
+  config:
+    weights:
+      structure: 12          # Points for structural compliance
+      tone: 8               # Points for tone and style
+    structure_checks:
+      title_max_words: [MAX_TITLE_WORDS]
+      summary_word_range: [[MIN_WORDS], [MAX_WORDS]]
+      bullet_count: [BULLET_COUNT]
+      json_compliance: true
+    tone_checks:
+      hype_terms_denylist: ["revolutionary", "game-changing", "world-class", "cutting-edge", "breakthrough"]
+      max_avg_sentence_length: [MAX_SENTENCE_LENGTH]
+      professional_tone: true
+
+answer_key: "answer_keys/offline/[YOUR_TASK]_structure.json"
+
+# Instructions for customization:
+# 1. Replace [TOPIC_DESCRIPTION] with your specific topic (e.g., "the current state of artificial intelligence in enterprise applications")
+# 2. Replace [MAX_TITLE_WORDS] with maximum title length (typically 6)
+# 3. Replace [MIN_WORDS] and [MAX_WORDS] with summary word count range (typically 120-160)
+# 4. Replace [BULLET_COUNT] with required number of bullet points (typically 3)
+# 5. Replace [MAX_SENTENCE_LENGTH] with maximum average sentence length (typically 24)
+# 6. Replace [YOUR_TASK] with your task identifier
+# 7. Add or modify hype_terms_denylist as appropriate for your domain
+# 8. Create corresponding answer key JSON file with expected structure validation
+# 9. Adjust weights if needed (structure + tone should total to your desired points)

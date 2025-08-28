@@ -1,0 +1,114 @@
+# Template for Online Deep Research Task - Multi-step Research Plan
+# Copy this file and customize for your specific deep research test case
+#
+# This template is for tasks that require web browsing, multi-step research planning,
+# risk assessment, and source validation with recency requirements
+
+id: "online.task_name.deep_research"
+name: "Task Name — Deep Research"
+category: "online"
+capability_profile:
+  web: "required"     # online tasks require web access
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Browsing is required for this task.
+    Provide sources with dates. If browsing is disabled, mark sources as placeholders and state limitations.
+    Respond only in valid JSON format.
+  user: |
+    Conduct comprehensive research on [RESEARCH_TOPIC] and create a detailed analysis.
+
+    Requirements:
+    - Research Plan: 7-10 ordered steps, each with goal, method, and deliverable
+    - Risk Register: Minimum 5 risks with likelihood (1-5), impact (1-5), and mitigation
+    - Sources: 5-8 credible sources with at least 3 from the last 3 years
+    - Assumptions: List key assumptions made during research
+    - Limitations: Acknowledge research limitations and constraints
+
+    Return in JSON format:
+    {
+      "research_plan": [
+        {
+          "step": 1,
+          "goal": "Define research objectives",
+          "method": "Literature review and stakeholder analysis",
+          "deliverable": "Research framework document"
+        }
+      ],
+      "risk_register": [
+        {
+          "risk": "Data availability limitations",
+          "likelihood": 3,
+          "impact": 4,
+          "mitigation": "Use multiple data sources and expert interviews"
+        }
+      ],
+      "sources": [
+        {
+          "title": "Source Title",
+          "author": "Author Name",
+          "publication": "Publication Name",
+          "year": 2024,
+          "url": "https://example.com",
+          "relevance": "Brief description of relevance"
+        }
+      ],
+      "assumptions": [
+        "Key assumption 1",
+        "Key assumption 2"
+      ],
+      "limitations": [
+        "Research limitation 1",
+        "Research limitation 2"
+      ]
+    }
+
+expectation:
+  schema_name: "deep_research"
+  fields:
+    - path: "$.research_plan"
+      type: "array"
+    - path: "$.risk_register"
+      type: "array"
+    - path: "$.sources"
+      type: "array"
+    - path: "$.assumptions"
+      type: "array"
+    - path: "$.limitations"
+      type: "array"
+
+scoring:
+  evaluator: "deep_research"
+  config:
+    plan_requirements:
+      min_steps: 7
+      max_steps: 10
+      required_fields: ["goal", "method", "deliverable"]
+    risk_requirements:
+      min_risks: 5
+      likelihood_range: [1, 5]
+      impact_range: [1, 5]
+      required_fields: ["risk", "likelihood", "impact", "mitigation"]
+    source_requirements:
+      min_sources: 5
+      max_sources: 8
+      min_recent_sources: 3
+      recency_years: 3
+    weights:
+      plan_quality: 5      # Points for research plan structure and quality
+      source_quality: 5    # Points for source quality and recency
+
+# Note: This is a placeholder template. The deep_research evaluator
+# requires full implementation in MI Stage 2 before this template
+# can be used for actual test cases.
+
+# Instructions for customization:
+# 1. Replace [RESEARCH_TOPIC] with your specific research topic
+# 2. Customize the research plan example steps for your domain
+# 3. Adjust risk register examples to be relevant to your topic
+# 4. Modify source requirements if needed (min/max counts, recency)
+# 5. Add domain-specific assumptions and limitations examples
+# 6. Test with the deep_research evaluator once it's fully implemented
+# 7. Ensure web capability is actually available for testing

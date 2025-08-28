@@ -178,11 +178,13 @@ class TestFixtureLoading:
             with open(task1_key_path) as f:
                 task1_key = json.load(f)
 
-            assert "precision" in task1_key
-            assert "recall" in task1_key
-            assert "f1" in task1_key
-            assert "accuracy" in task1_key
-            assert "confusion_matrix" in task1_key
+            assert "metrics" in task1_key
+            metrics = task1_key["metrics"]
+            assert "precision" in metrics
+            assert "recall" in metrics
+            assert "f1" in metrics
+            assert "accuracy" in metrics
+            assert "confusion_matrix" in metrics
 
         # Test Task 2 answer key
         task2_key_path = Path("answer_keys/offline/task2_lines.json")

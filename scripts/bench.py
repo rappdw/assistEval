@@ -170,7 +170,7 @@ def handle_process_manual_command(args: argparse.Namespace, console: Console) ->
             f"{output_dir}[/green]"
         )
         console.print(
-            f"[blue]Run evaluation with: python scripts/run_bench.py run "
+            f"[blue]Run evaluation with: python scripts/bench.py run "
             f"--results-dir {output_dir}[/blue]"
         )
 
@@ -263,24 +263,24 @@ def main() -> None:
     )
     parser.epilog = """Examples:
   # Run full test matrix
-  python scripts/run_bench.py run --matrix
+  python scripts/bench.py run --matrix
 
   # Run single test with specific provider
-  python scripts/run_bench.py run --provider chatgpt \
+  python scripts/bench.py run --provider chatgpt \
     --test bench/tests/offline/task1_metrics.yaml
 
   # Validate test definition
-  python scripts/run_bench.py validate \
+  python scripts/bench.py validate \
     --test bench/tests/offline/task1_metrics.yaml
 
   # Check execution status
-  python scripts/run_bench.py status --run results/run_20250827_160000
+  python scripts/bench.py status --run results/run_20250827_160000
 
   # Generate reports from latest run
-  python scripts/run_bench.py report
+  python scripts/bench.py report
 
   # Generate aggregated report from multiple runs
-  python scripts/run_bench.py report --aggregate --latest 3
+  python scripts/bench.py report --aggregate --latest 3
         """
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

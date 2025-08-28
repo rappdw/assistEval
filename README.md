@@ -29,7 +29,7 @@ This repository provides an open, reproducible harness to compare general-purpos
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/your-org/assistEval.git
 cd assistEval
 
 # Install dependencies with uv
@@ -43,10 +43,10 @@ uv run pre-commit install
 
 ```bash
 # Run full evaluation matrix
-uv run python scripts/bench.py run --config configs/runmatrix.yaml --weights configs/weights.default.yaml
+uv run python scripts/bench.py run --matrix
 
 # Run a single test for ChatGPT
-uv run python scripts/bench.py run --provider chatgpt --test tests/offline/task1_metrics.yaml
+uv run python scripts/bench.py run --provider chatgpt --test bench/tests/offline/task1_metrics.yaml
 
 # Generate consolidated report
 uv run python scripts/make_report.py --results results/
@@ -185,16 +185,15 @@ stability_bonus: 5
 
 ## Adding New Tests
 
-1. Copy a template from `tests/_templates/`
+1. Copy a template from `bench/tests/_templates/`
 2. Add fixtures to `fixtures/` directory
 3. Create answer key in `answer_keys/`
-4. Validate: `uv run python scripts/bench.py validate --test tests/your_test.yaml`
+4. Validate test: `uv run python scripts/bench.py validate --test bench/tests/your_test.yaml`
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
-3. Make changes following the code quality standards
 4. Run tests and quality checks: `uv run pre-commit run --all-files`
 5. Commit changes: `git commit -m "Description"`
 6. Push to branch: `git push origin feature-name`

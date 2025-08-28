@@ -1,0 +1,93 @@
+# Template for Offline Regex Task - Pattern Validation
+# Copy this file and customize for your specific regex validation test case
+#
+# This template is for tasks that require creating and validating regular expressions
+# against test data with specific constraints and requirements
+
+id: "offline.task_name.regex_pattern"
+name: "Task Name — Regex Pattern Validation"
+category: "offline"
+capability_profile:
+  web: "forbidden"    # offline tasks cannot use web
+  json_required: true
+  retries: 1
+
+prompt:
+  system: |
+    You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+    Do not fabricate sources. Respond only in valid JSON format.
+  user: |
+    Create a regular expression to identify [PATTERN_DESCRIPTION].
+
+    Requirements:
+    - Match format: [FORMAT_SPECIFICATION]
+    - [CONSTRAINT_1]
+    - [CONSTRAINT_2]
+    - [CONSTRAINT_3]
+    - Use anchors to match complete strings only
+    - No catastrophic backtracking
+
+    Test your regex against these lines:
+    [TEST_LINE_1]
+    [TEST_LINE_2]
+    [TEST_LINE_3]
+    [TEST_LINE_4]
+    [TEST_LINE_5]
+    [TEST_LINE_6]
+    [TEST_LINE_7]
+    [TEST_LINE_8]
+    [TEST_LINE_9]
+    [TEST_LINE_10]
+    [TEST_LINE_11]
+    [TEST_LINE_12]
+
+    Return in JSON format:
+    {
+      "task2_[PATTERN_TYPE]_regex": {
+        "regex_pattern": "your_regex_here",
+        "matching_lines": [1, 2, 3],
+        "explanation": "Brief explanation of regex components"
+      }
+    }
+
+expectation:
+  schema_name: "task2_[PATTERN_TYPE]_regex"
+  fields:
+    - path: "$.task2_[PATTERN_TYPE]_regex.regex_pattern"
+      type: "string"
+    - path: "$.task2_[PATTERN_TYPE]_regex.matching_lines"
+      type: "array"
+    - path: "$.task2_[PATTERN_TYPE]_regex.explanation"
+      type: "string"
+
+scoring:
+  evaluator: "regex_match"
+  config:
+    timeout_ms: 100          # Timeout to prevent catastrophic backtracking
+    weights:
+      regex_validity: 18     # Points for regex validity and constraints
+      line_matches: 12       # Points for correct line matching
+    validity_checks:
+      anchors_required: true # Require start/end anchors
+      # Add specific constraints for your pattern type:
+      # area_code_restrictions: [000, 666, "9xx"]  # Example for SSN
+      # group_code_restrictions: ["00"]            # Example for SSN
+      # serial_restrictions: ["0000"]              # Example for SSN
+
+fixtures:
+  - path: "fixtures/text/[YOUR_TEST_LINES].txt"
+    variable: "test_lines"
+
+answer_key: "answer_keys/offline/[YOUR_TASK]_lines.json"
+
+# Instructions for customization:
+# 1. Replace [PATTERN_DESCRIPTION] with what you're trying to match (e.g., "valid U.S. Social Security Numbers")
+# 2. Replace [FORMAT_SPECIFICATION] with the expected format (e.g., "XXX-XX-XXXX (with hyphens)")
+# 3. Replace [CONSTRAINT_1], [CONSTRAINT_2], etc. with specific validation rules
+# 4. Replace [TEST_LINE_1] through [TEST_LINE_12] with your test cases
+# 5. Replace [PATTERN_TYPE] with a short identifier (e.g., "ssn", "phone", "email")
+# 6. Replace [YOUR_TEST_LINES] with your fixture filename
+# 7. Replace [YOUR_TASK] with your task identifier
+# 8. Add specific validity_checks for your pattern type
+# 9. Create corresponding answer key JSON file with expected matching line numbers
+# 10. Create fixture file with test lines (one per line)
