@@ -29,21 +29,10 @@ jobs:
       run: |
         uv sync --extra dev
 
-    - name: Run black (check only)
-      run: |
-        uv run black --check --diff .
-
-    - name: Run isort (check only)
-      run: |
-        uv run isort --check-only --diff .
-
-    - name: Run ruff
+    - name: Run ruff (check and format)
       run: |
         uv run ruff check .
-
-    - name: Run flake8
-      run: |
-        uv run flake8 .
+        uv run ruff format --check .
 
   type-check:
     runs-on: ubuntu-latest
