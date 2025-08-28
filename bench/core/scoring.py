@@ -217,17 +217,32 @@ class ScoringEngine:
         # Calculate weighted sub-scores
         weighted_sub_scores = {}
         total_weighted = 0.0
+        processed_components = set()
 
         for component, score in evaluation_result.sub_scores.items():
-            if component in task_weights:
+            if component in task_weights and component not in processed_components:
                 weight = task_weights[component]
+                processed_components.add(component)
 
                 # Handle nested weights (e.g., confusion_matrix)
                 if isinstance(weight, dict):
                     nested_total = 0.0
 
-                    # Check if confusion matrix data is in details for nested scoring
-                    if (
+                    # For confusion matrix, use dict data from sub_scores if available
+                    if component == "confusion_matrix":
+                        if isinstance(score, dict):  # type: ignore[unreachable]
+                            for sub_component, sub_score in score.items():  # type: ignore[unreachable]
+                                if sub_component in weight:
+                                    sub_weight = weight[sub_component]
+                                    weighted_value = float(sub_score) * float(
+                                        sub_weight
+                                    )
+                                    weighted_sub_scores[
+                                        f"{component}_{sub_component}"
+                                    ] = weighted_value
+                                    nested_total += weighted_value
+                    # Fallback to details if sub_scores doesn't have dict data
+                    elif (
                         component == "confusion_matrix"
                         and "confusion_matrix" in evaluation_result.details
                     ):
@@ -251,6 +266,28 @@ class ScoringEngine:
                     weighted_value = float(score) * float(weight)
                     weighted_sub_scores[component] = weighted_value
                     total_weighted += weighted_value
+
+        # Handle confusion_matrix weights if not processed and available in details
+        if (
+            "confusion_matrix" in task_weights
+            and "confusion_matrix" not in processed_components
+            and "confusion_matrix" in evaluation_result.details
+        ):
+            cm_weights = task_weights["confusion_matrix"]
+            cm_data = evaluation_result.details["confusion_matrix"]
+            if isinstance(cm_weights, dict) and isinstance(cm_data, dict):
+                cm_total = 0.0
+                for sub_component, sub_score in cm_data.items():
+                    if sub_component in cm_weights:
+                        sub_weight = cm_weights[sub_component]
+                        weighted_value = float(sub_score) * float(sub_weight)
+                        weighted_sub_scores[
+                            f"confusion_matrix_{sub_component}"
+                        ] = weighted_value
+                        cm_total += weighted_value
+
+                weighted_sub_scores["confusion_matrix"] = cm_total
+                total_weighted += cm_total
 
         # Calculate total weight (handle nested dictionaries)
         total_weight = 0.0

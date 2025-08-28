@@ -44,6 +44,12 @@ def main() -> None:
 
   # Check execution status
   python scripts/run_bench.py status --run results/run_20250827_160000
+
+  # Generate reports from latest run
+  python scripts/run_bench.py report
+
+  # Generate aggregated report from multiple runs
+  python scripts/run_bench.py report --aggregate --latest 3
         """
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -130,6 +136,44 @@ def main() -> None:
         help="Configuration directory (default: configs)",
     )
 
+    # Report command
+    report_parser = subparsers.add_parser(
+        "report", help="Generate reports from evaluation results"
+    )
+    report_parser.add_argument(
+        "--results",
+        type=Path,
+        default=Path("results"),
+        help="Results directory (default: results)",
+    )
+    report_parser.add_argument(
+        "--output",
+        type=Path,
+        help="Output directory for reports (default: results/reports)",
+    )
+    report_parser.add_argument(
+        "--format",
+        choices=["markdown", "json", "both"],
+        default="both",
+        help="Report format to generate (default: both)",
+    )
+    report_parser.add_argument(
+        "--runs",
+        nargs="+",
+        help="Specific run directories to include",
+    )
+    report_parser.add_argument(
+        "--aggregate",
+        action="store_true",
+        help="Generate aggregated report across multiple runs",
+    )
+    report_parser.add_argument(
+        "--latest",
+        type=int,
+        default=1,
+        help="Number of latest runs to include (default: 1)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -146,6 +190,8 @@ def main() -> None:
             handle_status_command(args, console)
         elif args.command == "providers":
             handle_providers_command(args, console)
+        elif args.command == "report":
+            handle_report_command(args, console)
 
     except (ConfigurationError, TestExecutionError) as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -328,6 +374,80 @@ def handle_providers_command(args: argparse.Namespace, console: Console) -> None
 
     except Exception as e:
         console.print(f"[red]Failed to list providers: {e}[/red]")
+
+
+def handle_report_command(args: argparse.Namespace, console: Console) -> None:
+    """Handle the report command."""
+    import sys
+    from pathlib import Path
+
+    # Add project root to path for imports
+    project_root = Path(__file__).parent.parent
+    sys.path.insert(0, str(project_root))
+
+    try:
+        from bench.core.reporting import ConsolidatedReporter
+
+        # Validate results directory
+        if not args.results.exists():
+            console.print(
+                f"[red]Error: Results directory {args.results} does not exist[/red]"
+            )
+            return
+
+        # Set default output directory
+        if args.output is None:
+            args.output = args.results / "reports"
+
+        # Determine formats
+        formats = ["markdown", "json"] if args.format == "both" else [args.format]
+
+        # Create reporter
+        reporter = ConsolidatedReporter(args.results, args.output)
+
+        # Determine run directories
+        if args.runs:
+            run_dirs = [args.results / run_name for run_name in args.runs]
+            # Validate specified runs exist
+            for run_dir in run_dirs:
+                if not run_dir.exists():
+                    console.print(
+                        f"[yellow]Warning: Run directory {run_dir} "
+                        f"does not exist[/yellow]"
+                    )
+            run_dirs = [d for d in run_dirs if d.exists()]
+        else:
+            run_dirs = reporter._find_latest_runs(args.latest)
+
+        if not run_dirs:
+            console.print("[red]Error: No valid run directories found[/red]")
+            return
+
+        console.print(
+            f"[green]Generating reports for {len(run_dirs)} run(s)...[/green]"
+        )
+        for run_dir in run_dirs:
+            console.print(f"  - {run_dir.name}")
+
+        # Generate reports
+        generated_files = reporter.generate_reports(
+            run_dirs=run_dirs, formats=formats, aggregate=args.aggregate
+        )
+
+        # Report success
+        console.print(
+            f"\n[green]Generated {len(generated_files)} report file(s):[/green]"
+        )
+        for report_type, file_path in generated_files.items():
+            console.print(f"  - [cyan]{report_type}[/cyan]: {file_path}")
+
+    except ImportError as e:
+        console.print(f"[red]Error: Missing dependencies for reporting: {e}[/red]")
+        console.print(
+            "[yellow]Make sure the reporting system is properly installed[/yellow]"
+        )
+    except Exception as e:
+        console.print(f"[red]Error generating reports: {e}[/red]")
 
 
 if __name__ == "__main__":
