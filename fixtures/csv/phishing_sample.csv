@@ -1,0 +1,9 @@
+email_id,sender,subject,body_length,has_links,has_attachments,urgency_words,is_phishing
+1,support@bank.com,Account Verification Required,245,1,0,3,1
+2,newsletter@company.com,Weekly Updates,156,2,0,0,0
+3,urgent@security.com,IMMEDIATE ACTION REQUIRED,89,1,1,5,1
+4,info@vendor.com,Invoice #12345,134,0,1,0,0
+5,admin@internal.com,Policy Update,198,1,0,1,0
+6,noreply@service.com,Password Reset,67,1,0,2,1
+7,team@project.com,Meeting Notes,289,0,0,0,0
+8,alert@system.com,System Maintenance,145,1,0,1,0

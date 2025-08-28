@@ -1,7 +1,6 @@
 # Task 1: Metrics from CSV - Phishing Detection Classification
-# TODO: Implement in Stage 10 - Sample Tests & Fixtures
 
-id: "offline.task1.metrics"
+id: "offline.task1.metrics_csv"
 name: "Task 1 — Metrics from CSV"
 category: "offline"
 capability_profile:
@@ -14,11 +13,43 @@ prompt:
     You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
     Do not fabricate sources. Respond only in valid JSON format.
   user: |
-    # TODO: Add complete task specification in Stage 10
-    # - Include phishing_sample.csv data inline
-    # - Specify required JSON output schema
-    # - Define precision, recall, F1, accuracy calculations
-    # - Require confusion matrix (tp, fp, fn, tn)
+    Analyze the following CSV data and calculate classification metrics for phishing detection.
+
+    CSV Data:
+    email_id,sender,subject,body_length,has_links,has_attachments,urgency_words,is_phishing
+    1,support@bank.com,Account Verification Required,245,1,0,3,1
+    2,newsletter@company.com,Weekly Updates,156,2,0,0,0
+    3,urgent@security.com,IMMEDIATE ACTION REQUIRED,89,1,1,5,1
+    4,info@vendor.com,Invoice #12345,134,0,1,0,0
+    5,admin@internal.com,Policy Update,198,1,0,1,0
+    6,noreply@service.com,Password Reset,67,1,0,2,1
+    7,team@project.com,Meeting Notes,289,0,0,0,0
+    8,alert@system.com,System Maintenance,145,1,0,1,0
+
+    The last column 'is_phishing' indicates the ground truth (1=phishing, 0=legitimate).
+
+    Calculate the following classification metrics and return them in JSON format:
+    - precision (4 decimal places)
+    - recall (4 decimal places)
+    - f1 (4 decimal places)
+    - accuracy (4 decimal places)
+    - confusion_matrix with tp, fp, fn, tn (integers)
+
+    Required JSON format:
+    {
+      "task1_data_metrics": {
+        "precision": 0.0000,
+        "recall": 0.0000,
+        "f1": 0.0000,
+        "accuracy": 0.0000,
+        "confusion_matrix": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0
+        }
+      }
+    }
 
 expectation:
   schema_name: "task1_metrics"
@@ -55,3 +86,9 @@ scoring:
         fp: 3
         fn: 3
         tn: 3
+
+fixtures:
+  - path: "fixtures/csv/phishing_sample.csv"
+    variable: "csv_content"
+
+answer_key: "answer_keys/offline/task1_metrics.json"

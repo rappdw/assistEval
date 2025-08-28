@@ -1,5 +1,4 @@
 # Task 3: Executive Summary - Structure and Tone Validation
-# TODO: Implement in Stage 10 - Sample Tests & Fixtures
 
 id: "offline.task3.exec_summary"
 name: "Task 3 — Executive Summary"
@@ -14,37 +13,52 @@ prompt:
     You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
     Do not fabricate sources. Respond only in valid JSON format.
   user: |
-    # TODO: Add complete task specification in Stage 10
-    # - Include source material for summarization
-    # - Specify executive summary requirements
-    # - Define title constraints (≤6 words)
-    # - Require 120-160 word summary with exactly 3 bullets
-    # - Specify tone requirements (no hype terms)
+    Write an executive summary about the current state of artificial intelligence in enterprise applications.
+
+    Requirements:
+    - Title: Maximum 6 words
+    - Summary: 120-160 words (excluding title and bullets)
+    - Exactly 3 bullet points highlighting key insights
+    - Professional tone, avoid hype terms
+    - Concise sentences (average ≤24 words)
+
+    Return in JSON format:
+    {
+      "task3_exec_summary": {
+        "title": "Your Title Here",
+        "summary": "Your summary paragraph here...",
+        "key_points": [
+          "First key insight",
+          "Second key insight",
+          "Third key insight"
+        ]
+      }
+    }
 
 expectation:
   schema_name: "task3_exec_summary"
   fields:
-    - path: "$.title"
+    - path: "$.task3_exec_summary.title"
       type: "string"
-    - path: "$.summary"
+    - path: "$.task3_exec_summary.summary"
       type: "string"
-    - path: "$.key_points"
+    - path: "$.task3_exec_summary.key_points"
       type: "array"
 
 scoring:
   evaluator: "exec_summary"
   config:
-    structure_weights:
-      title_length: 3      # ≤6 words
-      word_count: 3        # 120-160 words
-      bullet_count: 3      # exactly 3 bullets
-      schema_compliance: 3 # JSON format
-    tone_weights:
-      hype_terms: 4        # avoid denylist terms
-      sentence_length: 4   # avg ≤24 words
-    requirements:
-      max_title_words: 6
-      min_summary_words: 120
-      max_summary_words: 160
-      required_bullets: 3
+    weights:
+      structure: 12
+      tone: 8
+    structure_checks:
+      title_max_words: 6
+      summary_word_range: [120, 160]
+      bullet_count: 3
+      json_compliance: true
+    tone_checks:
+      hype_terms_denylist: ["revolutionary", "game-changing", "world-class", "cutting-edge", "breakthrough"]
       max_avg_sentence_length: 24
+      professional_tone: true
+
+answer_key: "answer_keys/offline/task3_structure.json"

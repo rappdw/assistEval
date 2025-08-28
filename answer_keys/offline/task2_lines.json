@@ -1,0 +1,5 @@
+{
+  "matching_lines": [1, 6, 7],
+  "total_valid": 3,
+  "explanation": "Lines 1, 6, 7 contain valid SSN formats that pass all validation rules"
+}

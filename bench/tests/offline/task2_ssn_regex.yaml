@@ -1,5 +1,4 @@
 # Task 2: DLP Regex for U.S. SSN - Pattern Validation
-# TODO: Implement in Stage 10 - Sample Tests & Fixtures
 
 id: "offline.task2.ssn_regex"
 name: "Task 2 — DLP Regex for U.S. SSN"
@@ -14,19 +13,48 @@ prompt:
     You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
     Do not fabricate sources. Respond only in valid JSON format.
   user: |
-    # TODO: Add complete task specification in Stage 10
-    # - Include ssn_validation_lines.txt data inline
-    # - Specify regex pattern requirements
-    # - Define SSN format constraints (no 000/666/9xx, no 00, no 0000)
-    # - Require anchored pattern with proper grouping
+    Create a regular expression to identify valid U.S. Social Security Numbers (SSNs).
+
+    Requirements:
+    - Match format: XXX-XX-XXXX (with hyphens)
+    - Reject invalid area codes: 000, 666, 900-999
+    - Reject invalid group codes: 00
+    - Reject invalid serial numbers: 0000
+    - Use anchors to match complete strings only
+    - No catastrophic backtracking
+
+    Test your regex against these lines:
+    123-45-6789
+    000-12-3456
+    123-00-4567
+    123-45-0000
+    666-12-3456
+    987-65-4321
+    555-55-5555
+    123-456-7890
+    12-345-6789
+    1234-56-789
+    900-12-3456
+    123-45-67890
+
+    Return in JSON format:
+    {
+      "task2_ssn_regex": {
+        "regex_pattern": "your_regex_here",
+        "matching_lines": [1, 2, 3],
+        "explanation": "Brief explanation of regex components"
+      }
+    }
 
 expectation:
   schema_name: "task2_ssn_regex"
   fields:
-    - path: "$.regex_pattern"
+    - path: "$.task2_ssn_regex.regex_pattern"
       type: "string"
-    - path: "$.matching_lines"
+    - path: "$.task2_ssn_regex.matching_lines"
       type: "array"
+    - path: "$.task2_ssn_regex.explanation"
+      type: "string"
 
 scoring:
   evaluator: "regex_match"
@@ -35,8 +63,14 @@ scoring:
     weights:
       regex_validity: 18
       line_matches: 12
-    validation_rules:
-      - "anchored_pattern"
-      - "area_code_constraints"
-      - "group_constraints"
-      - "serial_constraints"
+    validity_checks:
+      anchors_required: true
+      area_code_restrictions: [000, 666, "9xx"]
+      group_code_restrictions: ["00"]
+      serial_restrictions: ["0000"]
+
+fixtures:
+  - path: "fixtures/text/ssn_validation_lines.txt"
+    variable: "test_lines"
+
+answer_key: "answer_keys/offline/task2_lines.json"

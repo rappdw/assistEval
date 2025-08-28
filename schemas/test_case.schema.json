@@ -97,6 +97,29 @@
           "description": "Evaluator-specific configuration"
         }
       }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "variable"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative path to fixture file"
+          },
+          "variable": {
+            "type": "string",
+            "description": "Variable name for fixture content substitution"
+          }
+        }
+      },
+      "description": "Optional fixture files for test data"
+    },
+    "answer_key": {
+      "type": "string",
+      "description": "Path to answer key file for evaluation"
     }
-  }
+  },
+  "required": ["id", "name", "category", "capability_profile", "prompt", "expectation", "scoring"]
 }

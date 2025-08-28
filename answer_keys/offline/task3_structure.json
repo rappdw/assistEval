@@ -1,0 +1,12 @@
+{
+  "expected_structure": {
+    "title_max_words": 6,
+    "summary_word_range": [120, 160],
+    "bullet_count": 3,
+    "tone_requirements": {
+      "avoid_hype": true,
+      "professional": true,
+      "concise_sentences": true
+    }
+  }
+}
