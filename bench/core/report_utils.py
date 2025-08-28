@@ -201,9 +201,11 @@ def calculate_statistical_significance(
         "significant": t_stat > critical_value,
         "t_statistic": t_stat,
         "mean_difference": mean_a - mean_b,
-        "effect_size": abs(mean_a - mean_b) / ((var_a + var_b) / 2) ** 0.5
-        if var_a + var_b > 0
-        else 0,
+        "effect_size": (
+            abs(mean_a - mean_b) / ((var_a + var_b) / 2) ** 0.5
+            if var_a + var_b > 0
+            else 0
+        ),
     }
 
 

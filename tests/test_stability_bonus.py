@@ -1,6 +1,5 @@
 """Tests for stability bonus calculation."""
 
-
 from bench.core.evaluators.base import EvaluationResult
 from bench.core.scoring import StabilityAnalyzer, WeightConfig
 

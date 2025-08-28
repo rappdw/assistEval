@@ -174,4 +174,7 @@ Thumbs.db              # Windows files
 secrets.yaml
 api_keys.json
 
+# Security reports
+bandit-report.json
+
 scratchpad.md

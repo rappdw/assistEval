@@ -1,6 +1,5 @@
 """Tests for deep research evaluator."""
 
-
 from bench.core.evaluators.deep_research import DeepResearchEvaluator
 
 
