@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from bench.adapters import create_provider
 from bench.adapters.base import Provider, ProviderError
+from bench.core.evaluators import EvaluationResult, EvaluatorRegistry
 from bench.core.validators import (
     ContentNormalizer,
     FieldExtractor,
@@ -540,9 +541,16 @@ class TestRunner:
                 except json.JSONDecodeError as e:
                     self.logger.warning(f"Failed to parse JSON response: {e}")
 
+            # Run evaluation if we have parsed data and scoring configuration
+            evaluation_result = None
+            if parsed_data and "scoring" in test_def:
+                evaluation_result = self._evaluate_response(
+                    parsed_data, test_def, provider.name
+                )
+
             execution_time = time.time() - start_time
 
-            return {
+            result = {
                 "repetition": repetition,
                 "provider": provider.name,
                 "test_id": test_def["id"],
@@ -552,6 +560,24 @@ class TestRunner:
                 "parsed_successfully": parsed_data is not None,
                 "timestamp": datetime.now().isoformat(),
             }
+
+            # Add evaluation results if available
+            if evaluation_result:
+                result["evaluation"] = {
+                    "total_score": evaluation_result.total_score,
+                    "max_score": evaluation_result.max_score,
+                    "score_percentage": evaluation_result.score_percentage,
+                    "sub_scores": evaluation_result.sub_scores,
+                    "errors": evaluation_result.errors,
+                    "warnings": evaluation_result.warnings,
+                    "details": evaluation_result.details,
+                    "metadata": evaluation_result.metadata,
+                }
+
+                # Save evaluation results
+                self._save_evaluation_result(evaluation_result, provider.name)
+
+            return result
 
         except ProviderError as e:
             execution_time = time.time() - start_time
@@ -585,3 +611,122 @@ class TestRunner:
         test_files.extend(test_dir.glob("*.yml"))
 
         return sorted(test_files)
+
+    def _evaluate_response(
+        self, parsed_data: dict[str, Any], test_def: dict[str, Any], provider_name: str
+    ) -> EvaluationResult | None:
+        """Evaluate provider response using configured evaluator.
+
+        Args:
+            parsed_data: Parsed JSON response from provider
+            test_def: Test definition with scoring configuration
+            provider_name: Name of the provider
+
+        Returns:
+            Evaluation result or None if evaluation fails
+        """
+        try:
+            scoring_config = test_def["scoring"]
+            evaluator_name = scoring_config.get("evaluator")
+
+            if not evaluator_name:
+                self.logger.warning(f"No evaluator specified for test {test_def['id']}")
+                return None
+
+            if not EvaluatorRegistry.is_registered(evaluator_name):
+                self.logger.error(f"Unknown evaluator: {evaluator_name}")
+                return None
+
+            # Create evaluator with configuration
+            evaluator_config = scoring_config.get("config", {})
+            evaluator = EvaluatorRegistry.create_evaluator(
+                evaluator_name, evaluator_config
+            )
+
+            # Load answer key if available
+            answer_key = self._load_answer_key(test_def["id"])
+
+            # Run evaluation
+            result = evaluator.evaluate(parsed_data, test_def, answer_key)
+
+            self.logger.info(
+                f"Evaluation completed for {test_def['id']} with {provider_name}: "
+                f"{result.total_score:.2f}/{result.max_score:.2f} "
+                f"({result.score_percentage:.1f}%)"
+            )
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Evaluation failed for test {test_def['id']}: {e}")
+            return None
+
+    def _load_answer_key(self, test_id: str) -> dict[str, Any] | None:
+        """Load answer key for a test.
+
+        Args:
+            test_id: Test identifier
+
+        Returns:
+            Answer key data or None if not found
+        """
+        try:
+            # Determine test category from test_id
+            # (offline.task1.metrics_csv -> offline)
+            category = test_id.split(".")[0] if "." in test_id else "offline"
+
+            answer_key_path = Path("answer_keys") / category / f"{test_id}.json"
+
+            if not answer_key_path.exists():
+                self.logger.debug(f"No answer key found at {answer_key_path}")
+                return None
+
+            with open(answer_key_path, encoding="utf-8") as f:
+                data: dict[str, Any] = json.load(f)
+                return data
+
+        except Exception as e:
+            self.logger.warning(f"Failed to load answer key for {test_id}: {e}")
+            return None
+
+    def _save_evaluation_result(
+        self, evaluation_result: EvaluationResult, provider_name: str
+    ) -> None:
+        """Save evaluation result to results directory.
+
+        Args:
+            evaluation_result: Evaluation result to save
+            provider_name: Name of the provider
+        """
+        try:
+            if not self.results_collector.current_run_dir:
+                self.logger.warning("No active run directory for saving evaluation")
+                return
+
+            eval_dir = (
+                self.results_collector.current_run_dir / "evaluations" / provider_name
+            )
+            eval_dir.mkdir(parents=True, exist_ok=True)
+
+            eval_file = eval_dir / f"{evaluation_result.task_id}.json"
+
+            # Convert evaluation result to serializable format
+            eval_data = {
+                "task_id": evaluation_result.task_id,
+                "total_score": evaluation_result.total_score,
+                "max_score": evaluation_result.max_score,
+                "score_percentage": evaluation_result.score_percentage,
+                "sub_scores": evaluation_result.sub_scores,
+                "details": evaluation_result.details,
+                "errors": evaluation_result.errors,
+                "warnings": evaluation_result.warnings,
+                "metadata": evaluation_result.metadata,
+            }
+
+            with open(eval_file, "w", encoding="utf-8") as f:
+                json.dump(eval_data, f, indent=2)
+
+            self.logger.debug(f"Evaluation result saved to {eval_file}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to save evaluation result: {e}")
