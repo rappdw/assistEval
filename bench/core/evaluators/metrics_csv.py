@@ -231,9 +231,9 @@ class MetricsCSVEvaluator(BaseEvaluator):
 
         # Calculate proportional score
         score = correct_components / total_components if total_components > 0 else 0.0
-        result.details[
-            "confusion_matrix_score"
-        ] = f"{correct_components}/{total_components}"
+        result.details["confusion_matrix_score"] = (
+            f"{correct_components}/{total_components}"
+        )
         result.details["confusion_matrix_status"] = "evaluated"
 
         return score

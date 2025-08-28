@@ -219,9 +219,9 @@ class TestFixtureIntegrity:
 
             for i, line in enumerate(lines, 1):
                 fields = line.split(",")
-                assert (
-                    len(fields) == 8
-                ), f"Line {i} has {len(fields)} fields, expected 8"
+                assert len(fields) == 8, (
+                    f"Line {i} has {len(fields)} fields, expected 8"
+                )
 
                 # Validate email_id is numeric
                 assert fields[0].isdigit(), f"Line {i} email_id is not numeric"

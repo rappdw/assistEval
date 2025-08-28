@@ -281,9 +281,9 @@ class ScoringEngine:
                     if sub_component in cm_weights:
                         sub_weight = cm_weights[sub_component]
                         weighted_value = float(sub_score) * float(sub_weight)
-                        weighted_sub_scores[
-                            f"confusion_matrix_{sub_component}"
-                        ] = weighted_value
+                        weighted_sub_scores[f"confusion_matrix_{sub_component}"] = (
+                            weighted_value
+                        )
                         cm_total += weighted_value
 
                 weighted_sub_scores["confusion_matrix"] = cm_total

@@ -394,9 +394,9 @@ class TestExecSummaryEvaluator:
     def test_title_too_long(self):
         """Test handling of title that's too long."""
         response_long_title = self.perfect_response.copy()
-        response_long_title[
-            "title"
-        ] = "This is a very long title that exceeds six words"  # 11 words
+        response_long_title["title"] = (
+            "This is a very long title that exceeds six words"  # 11 words
+        )
 
         result = self.evaluator.evaluate(response_long_title, self.test_case, None)
 

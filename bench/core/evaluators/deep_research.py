@@ -105,9 +105,9 @@ class DeepResearchEvaluator(BaseEvaluator):
             details["step_count_valid"] = True
         else:
             details["step_count_valid"] = False
-            details[
-                "step_count_issue"
-            ] = f"Expected {min_steps}-{max_steps} steps, got {plan_count}"
+            details["step_count_issue"] = (
+                f"Expected {min_steps}-{max_steps} steps, got {plan_count}"
+            )
 
         # Check required fields in each step
         valid_steps = 0
