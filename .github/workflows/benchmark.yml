@@ -52,7 +52,7 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
-        uv run python scripts/run_bench.py run \
+        uv run python scripts/bench.py run \
           --provider chatgpt \
           --test-set ${{ github.event.inputs.test_set || 'offline' }} \
           --repetitions ${{ github.event.inputs.repetitions || '3' }} \

@@ -7,6 +7,7 @@ objective scoring logic for specific evaluation criteria.
 from typing import TYPE_CHECKING, Any
 
 from bench.core.evaluators.base import BaseEvaluator, EvaluationResult
+from bench.core.evaluators.deep_research import DeepResearchEvaluator
 from bench.core.evaluators.exec_summary import ExecSummaryEvaluator
 from bench.core.evaluators.metrics_csv import MetricsCSVEvaluator
 from bench.core.evaluators.regex_match import RegexMatchEvaluator
@@ -82,6 +83,7 @@ class EvaluatorRegistry:
 EvaluatorRegistry.register("metrics_csv", MetricsCSVEvaluator)
 EvaluatorRegistry.register("regex_match", RegexMatchEvaluator)
 EvaluatorRegistry.register("exec_summary", ExecSummaryEvaluator)
+EvaluatorRegistry.register("deep_research", DeepResearchEvaluator)
 
 __all__ = [
     "BaseEvaluator",
@@ -90,4 +92,5 @@ __all__ = [
     "MetricsCSVEvaluator",
     "RegexMatchEvaluator",
     "ExecSummaryEvaluator",
+    "DeepResearchEvaluator",
 ]
