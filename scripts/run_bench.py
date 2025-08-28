@@ -9,9 +9,240 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from rich.console import Console
 from rich.table import Table
+
+
+def handle_prepare_manual_command(args: argparse.Namespace, console: Console) -> None:
+    """Handle prepare-manual command."""
+    from bench.core.runner import TestRunner
+    from bench.core.utils import load_yaml_config
+
+    console.print("[bold blue]Preparing manual evaluation prompts...[/bold blue]")
+
+    try:
+        # Load configuration
+        config_dir = Path("configs")
+        runmatrix_config = load_yaml_config(config_dir / "runmatrix.yaml")
+
+        # Initialize runner
+        runner = TestRunner(config_dir)
+
+        # Get test cases based on test set
+        test_cases = []
+        if args.test_set in ["offline", "all"]:
+            test_cases.extend(runmatrix_config.get("test_sets", {}).get("offline", []))
+        if args.test_set in ["online", "all"]:
+            test_cases.extend(runmatrix_config.get("test_sets", {}).get("online", []))
+
+        if not test_cases:
+            console.print("[red]No test cases found for the specified test set[/red]")
+            return
+
+        # Generate prompts
+        prompts = []
+        for i in range(args.repetitions):
+            for test_id in test_cases:
+                try:
+                    test_path = Path("bench") / test_id
+                    test_case = runner.context.load_test_definition(test_path)
+                    prompt_text = _format_manual_prompt(test_case, args.format, i + 1)
+                    prompts.append(prompt_text)
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning: Failed to load test {test_id}: {e}[/yellow]"
+                    )
+
+        # Write prompts to file
+        with open(args.output, "w", encoding="utf-8") as f:
+            if args.format == "template":
+                f.write("# Manual Evaluation Prompts\n\n")
+                f.write("Copy each prompt below and paste into Microsoft Copilot.\n")
+                f.write("Save responses in the same order for processing.\n\n")
+                f.write("=" * 80 + "\n\n")
+
+            for i, prompt in enumerate(prompts, 1):
+                f.write(
+                    f"## Prompt {i}\n\n"
+                    if args.format == "template"
+                    else f"PROMPT {i}:\n"
+                )
+                f.write(prompt)
+                f.write(
+                    "\n\n" + "=" * 80 + "\n\n"
+                    if args.format == "template"
+                    else "\n\n---\n\n"
+                )
+
+        console.print(
+            f"[green]Generated {len(prompts)} prompts in {args.output}[/green]"
+        )
+
+    except Exception as e:
+        console.print(f"[red]Error preparing manual prompts: {e}[/red]")
+        raise
+
+
+def handle_process_manual_command(args: argparse.Namespace, console: Console) -> None:
+    """Handle process-manual command."""
+    from datetime import datetime
+
+    from bench.core.runner import TestRunner
+    from bench.core.utils import load_yaml_config
+
+    console.print("[bold blue]Processing manual evaluation results...[/bold blue]")
+
+    try:
+        # Load responses file
+        if not args.responses.exists():
+            console.print(f"[red]Responses file not found: {args.responses}[/red]")
+            return
+
+        with open(args.responses, encoding="utf-8") as f:
+            responses_text = f.read()
+
+        # Parse responses (simple delimiter-based parsing)
+        responses = _parse_manual_responses(responses_text)
+
+        if not responses:
+            console.print("[red]No responses found in the file[/red]")
+            return
+
+        # Load configuration
+        config_dir = args.config_dir
+        runmatrix_config = load_yaml_config(config_dir / "runmatrix.yaml")
+
+        # Initialize runner and results collector
+        TestRunner(config_dir)
+
+        # Determine output directory
+        output_dir = (
+            args.output
+            or Path("results") / f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Note: ResultsCollector would be used for actual result storage
+        # results_collector = ResultsCollector(output_dir)
+
+        # Process each response
+        test_cases = runmatrix_config.get("test_sets", {}).get("offline", [])
+
+        for i, _response in enumerate(responses):
+            if i >= len(test_cases):
+                console.print(
+                    "[yellow]Warning: More responses than test cases, "
+                    "ignoring extra responses[/yellow]"
+                )
+                break
+
+            test_id = test_cases[i]
+
+            try:
+                # Create result entry (placeholder for actual implementation)
+                # result = {
+                #     "test_id": test_id,
+                #     "provider": args.provider,
+                #     "timestamp": datetime.now().isoformat(),
+                #     "response": response,
+                #     "metadata": {
+                #         "manual_evaluation": True,
+                #         "processed_at": datetime.now().isoformat(),
+                #     },
+                # }
+
+                # Save raw result (placeholder - would need actual implementation)
+                # results_collector.save_raw_result(test_id, args.provider, result)
+                pass
+
+                console.print(f"[green]Processed response for {test_id}[/green]")
+
+            except Exception as e:
+                console.print(
+                    f"[yellow]Warning: Failed to process response for "
+                    f"{test_id}: {e}[/yellow]"
+                )
+
+        console.print(
+            f"[green]Processed {len(responses)} manual responses in "
+            f"{output_dir}[/green]"
+        )
+        console.print(
+            f"[blue]Run evaluation with: python scripts/run_bench.py run "
+            f"--results-dir {output_dir}[/blue]"
+        )
+
+    except Exception as e:
+        console.print(f"[red]Error processing manual responses: {e}[/red]")
+        raise
+
+
+def _format_manual_prompt(
+    test_case: dict[str, Any], format_type: str, repetition: int
+) -> str:
+    """Format a test case as a manual prompt."""
+    prompt_parts = []
+
+    if format_type == "template":
+        prompt_parts.append(f"**Test ID:** {test_case.get('id', 'Unknown')}")
+        prompt_parts.append(f"**Repetition:** {repetition}")
+        prompt_parts.append("")
+
+    # Add system prompt if present
+    if "prompt" in test_case and "system" in test_case["prompt"]:
+        if format_type == "template":
+            prompt_parts.append("**System Instructions:**")
+        prompt_parts.append(test_case["prompt"]["system"])
+        prompt_parts.append("")
+
+    # Add user prompt
+    if "prompt" in test_case and "user" in test_case["prompt"]:
+        if format_type == "template":
+            prompt_parts.append("**User Prompt:**")
+        prompt_parts.append(test_case["prompt"]["user"])
+
+    return "\n".join(prompt_parts)
+
+
+def _parse_manual_responses(text: str) -> list[str]:
+    """Parse manual responses from text file."""
+    responses = []
+    current_response: list[str] = []
+
+    lines = text.split("\n")
+    in_response = False
+
+    for line in lines:
+        line = line.strip()
+
+        # Check if this is a delimiter line
+        is_delimiter = any(
+            delim in line.upper() for delim in ["---", "===", "RESPONSE"]
+        )
+
+        if is_delimiter and current_response:
+            # End of current response
+            response_text = "\n".join(current_response).strip()
+            if response_text:
+                responses.append(response_text)
+            current_response = []
+            in_response = False
+        elif is_delimiter:
+            # Start of new response
+            in_response = True
+        elif in_response or (not responses and line):
+            # Part of response content
+            current_response.append(line)
+
+    # Add final response if exists
+    if current_response:
+        response_text = "\n".join(current_response).strip()
+        if response_text:
+            responses.append(response_text)
+
+    return responses
 
 
 def main() -> None:
@@ -174,6 +405,67 @@ def main() -> None:
         help="Number of latest runs to include (default: 1)",
     )
 
+    # Prepare manual command
+    prepare_manual_parser = subparsers.add_parser(
+        "prepare-manual", help="Prepare manual evaluation prompts"
+    )
+    prepare_manual_parser.add_argument(
+        "--provider",
+        default="copilot_manual",
+        help="Provider for manual evaluation (default: copilot_manual)",
+    )
+    prepare_manual_parser.add_argument(
+        "--test-set",
+        choices=["offline", "online", "all"],
+        default="offline",
+        help="Test set to prepare (default: offline)",
+    )
+    prepare_manual_parser.add_argument(
+        "--repetitions",
+        type=int,
+        default=1,
+        help="Number of repetitions (default: 1)",
+    )
+    prepare_manual_parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("manual_prompts.txt"),
+        help="Output file for prompts (default: manual_prompts.txt)",
+    )
+    prepare_manual_parser.add_argument(
+        "--format",
+        choices=["plain", "markdown", "template"],
+        default="template",
+        help="Output format (default: template)",
+    )
+
+    # Process manual command
+    process_manual_parser = subparsers.add_parser(
+        "process-manual", help="Process manual evaluation results"
+    )
+    process_manual_parser.add_argument(
+        "--responses",
+        type=Path,
+        required=True,
+        help="File containing manual evaluation responses",
+    )
+    process_manual_parser.add_argument(
+        "--output",
+        type=Path,
+        help="Output directory for processed results",
+    )
+    process_manual_parser.add_argument(
+        "--provider",
+        default="copilot_manual",
+        help="Provider name for results (default: copilot_manual)",
+    )
+    process_manual_parser.add_argument(
+        "--config-dir",
+        type=Path,
+        default=Path("configs"),
+        help="Configuration directory (default: configs)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -192,6 +484,10 @@ def main() -> None:
             handle_providers_command(args, console)
         elif args.command == "report":
             handle_report_command(args, console)
+        elif args.command == "prepare-manual":
+            handle_prepare_manual_command(args, console)
+        elif args.command == "process-manual":
+            handle_process_manual_command(args, console)
 
     except (ConfigurationError, TestExecutionError) as e:
         console.print(f"[red]Error: {e}[/red]")

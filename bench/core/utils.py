@@ -12,7 +12,10 @@ import signal
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 # Common English stopwords for optional filtering
 STOPWORDS = {
@@ -301,3 +304,26 @@ def ensure_reproducible_ordering(items: list[Any]) -> list[Any]:
     """
     # Sort by string representation for deterministic ordering
     return sorted(items, key=lambda x: str(x))
+
+
+def load_yaml_config(config_path: Path) -> dict[str, Any]:
+    """Load YAML configuration file.
+
+    Args:
+        config_path: Path to YAML configuration file
+
+    Returns:
+        Parsed configuration dictionary
+
+    Raises:
+        FileNotFoundError: If config file doesn't exist
+        yaml.YAMLError: If YAML parsing fails
+    """
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    with open(config_path, encoding="utf-8") as f:
+        try:
+            return yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            raise yaml.YAMLError(f"Failed to parse YAML file {config_path}: {e}") from e

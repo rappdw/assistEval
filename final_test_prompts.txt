@@ -1,0 +1,141 @@
+# Manual Evaluation Prompts
+
+Copy each prompt below and paste into Microsoft Copilot.
+Save responses in the same order for processing.
+
+================================================================================
+
+## Prompt 1
+
+**Test ID:** offline.task1.metrics_csv
+**Repetition:** 1
+
+**System Instructions:**
+You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+Do not fabricate sources. Respond only in valid JSON format.
+
+
+**User Prompt:**
+Analyze the following CSV data and calculate classification metrics for phishing detection.
+
+CSV Data:
+email_id,sender,subject,body_length,has_links,has_attachments,urgency_words,is_phishing
+1,support@bank.com,Account Verification Required,245,1,0,3,1
+2,newsletter@company.com,Weekly Updates,156,2,0,0,0
+3,urgent@security.com,IMMEDIATE ACTION REQUIRED,89,1,1,5,1
+4,info@vendor.com,Invoice #12345,134,0,1,0,0
+5,admin@internal.com,Policy Update,198,1,0,1,0
+6,noreply@service.com,Password Reset,67,1,0,2,1
+7,team@project.com,Meeting Notes,289,0,0,0,0
+8,alert@system.com,System Maintenance,145,1,0,1,0
+
+The last column 'is_phishing' indicates the ground truth (1=phishing, 0=legitimate).
+
+Calculate the following classification metrics and return them in JSON format:
+- precision (4 decimal places)
+- recall (4 decimal places)
+- f1 (4 decimal places)
+- accuracy (4 decimal places)
+- confusion_matrix with tp, fp, fn, tn (integers)
+
+Required JSON format:
+{
+  "task1_data_metrics": {
+    "precision": 0.0000,
+    "recall": 0.0000,
+    "f1": 0.0000,
+    "accuracy": 0.0000,
+    "confusion_matrix": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    }
+  }
+}
+
+
+================================================================================
+
+## Prompt 2
+
+**Test ID:** offline.task2.ssn_regex
+**Repetition:** 1
+
+**System Instructions:**
+You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+Do not fabricate sources. Respond only in valid JSON format.
+
+
+**User Prompt:**
+Create a regular expression to identify valid U.S. Social Security Numbers (SSNs).
+
+Requirements:
+- Match format: XXX-XX-XXXX (with hyphens)
+- Reject invalid area codes: 000, 666, 900-999
+- Reject invalid group codes: 00
+- Reject invalid serial numbers: 0000
+- Use anchors to match complete strings only
+- No catastrophic backtracking
+
+Test your regex against these lines:
+123-45-6789
+000-12-3456
+123-00-4567
+123-45-0000
+666-12-3456
+987-65-4321
+555-55-5555
+123-456-7890
+12-345-6789
+1234-56-789
+900-12-3456
+123-45-67890
+
+Return in JSON format:
+{
+  "task2_ssn_regex": {
+    "regex_pattern": "your_regex_here",
+    "matching_lines": [1, 2, 3],
+    "explanation": "Brief explanation of regex components"
+  }
+}
+
+
+================================================================================
+
+## Prompt 3
+
+**Test ID:** offline.task3.exec_summary
+**Repetition:** 1
+
+**System Instructions:**
+You are an enterprise assistant. Follow instructions exactly. Do not browse the web.
+Do not fabricate sources. Respond only in valid JSON format.
+
+
+**User Prompt:**
+Write an executive summary about the current state of artificial intelligence in enterprise applications.
+
+Requirements:
+- Title: Maximum 6 words
+- Summary: 120-160 words (excluding title and bullets)
+- Exactly 3 bullet points highlighting key insights
+- Professional tone, avoid hype terms
+- Concise sentences (average ≤24 words)
+
+Return in JSON format:
+{
+  "task3_exec_summary": {
+    "title": "Your Title Here",
+    "summary": "Your summary paragraph here...",
+    "key_points": [
+      "First key insight",
+      "Second key insight",
+      "Third key insight"
+    ]
+  }
+}
+
+
+================================================================================

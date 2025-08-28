@@ -1,0 +1,125 @@
+name: Benchmark Execution
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: 'Providers to test (comma-separated)'
+        required: false
+        default: 'chatgpt'
+      test_set:
+        description: 'Test set to run'
+        required: false
+        default: 'offline'
+        type: choice
+        options:
+        - offline
+        - online
+        - all
+      repetitions:
+        description: 'Number of repetitions for stability analysis'
+        required: false
+        default: '3'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    environment: benchmark
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.11
+      run: uv python install 3.11
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Create results directory
+      run: |
+        mkdir -p results
+        echo "RESULTS_DIR=results/run_$(date +%Y%m%d_%H%M%S)" >> $GITHUB_ENV
+
+    - name: Run ChatGPT benchmark
+      if: contains(github.event.inputs.providers || 'chatgpt', 'chatgpt')
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        uv run python scripts/run_bench.py run \
+          --provider chatgpt \
+          --test-set ${{ github.event.inputs.test_set || 'offline' }} \
+          --repetitions ${{ github.event.inputs.repetitions || '3' }} \
+          --output ${{ env.RESULTS_DIR }}
+
+    - name: Generate benchmark report
+      run: |
+        uv run python scripts/make_report.py \
+          --results ${{ env.RESULTS_DIR }} \
+          --output benchmark_report.md \
+          --format markdown
+
+    - name: Generate JSON summary
+      run: |
+        uv run python scripts/make_report.py \
+          --results ${{ env.RESULTS_DIR }} \
+          --output benchmark_summary.json \
+          --format json
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.run_number }}
+        path: |
+          ${{ env.RESULTS_DIR }}/
+          benchmark_report.md
+          benchmark_summary.json
+        retention-days: 90
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('benchmark_report.md')) {
+            const report = fs.readFileSync('benchmark_report.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔬 Benchmark Results\n\n${report}`
+            });
+          }
+
+    - name: Update benchmark badge
+      if: github.ref == 'refs/heads/main'
+      run: |
+        # Extract score from JSON summary for badge update
+        if [ -f benchmark_summary.json ]; then
+          SCORE=$(jq -r '.overall_score // "N/A"' benchmark_summary.json)
+          echo "Latest benchmark score: $SCORE" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Check for regressions
+      if: github.event_name == 'pull_request'
+      run: |
+        # Compare with baseline if available
+        if [ -f .github/baseline-benchmark.json ] && [ -f benchmark_summary.json ]; then
+          uv run python scripts/compare_benchmarks.py \
+            --baseline .github/baseline-benchmark.json \
+            --current benchmark_summary.json \
+            --threshold 5.0 \
+            --output regression_report.txt
+
+          if [ -f regression_report.txt ]; then
+            echo "## ⚠️ Performance Regression Detected" >> $GITHUB_STEP_SUMMARY
+            cat regression_report.txt >> $GITHUB_STEP_SUMMARY
+          fi
+        fi

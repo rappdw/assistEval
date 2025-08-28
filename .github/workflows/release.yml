@@ -1,0 +1,261 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.11
+      run: uv python install 3.11
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Set release version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
+
+    - name: Update version in pyproject.toml
+      run: |
+        sed -i 's/^version = .*/version = "${{ steps.version.outputs.version_number }}"/' pyproject.toml
+
+    - name: Run full test suite
+      run: |
+        echo "Running comprehensive test suite for release..."
+        uv run pytest --cov=bench --cov-report=xml --cov-report=html --tb=short
+
+    - name: Run quality checks
+      run: |
+        echo "Running code quality checks..."
+        uv run black --check .
+        uv run isort --check-only .
+        uv run ruff check .
+        uv run mypy .
+
+    - name: Run benchmark validation
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        echo "Validating benchmark functionality..."
+        # Run a quick validation test to ensure benchmarks work
+        uv run python scripts/run_bench.py validate --test bench/tests/offline/task1_metrics.yaml
+        uv run python scripts/run_bench.py validate --test bench/tests/offline/task2_ssn_regex.yaml
+        uv run python scripts/run_bench.py validate --test bench/tests/offline/task3_exec_summary.yaml
+
+    - name: Build distribution
+      run: |
+        echo "Building distribution packages..."
+        uv build
+
+        # Verify build contents
+        ls -la dist/
+
+        # Test installation
+        pip install dist/*.whl
+        python -c "import bench; print('Package import successful')"
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        echo "Generating changelog..."
+
+        # Get previous tag for changelog generation
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+        if [ -n "$PREV_TAG" ]; then
+          echo "## Changes since $PREV_TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+
+          # Generate commit log
+          git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD >> CHANGELOG.md
+
+          # Add contributor information
+          echo "" >> CHANGELOG.md
+          echo "## Contributors" >> CHANGELOG.md
+          git log --pretty=format:"- %an" ${PREV_TAG}..HEAD | sort | uniq >> CHANGELOG.md
+        else
+          echo "## Initial Release" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "First release of the ChatGPT vs Microsoft Copilot evaluation harness." >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### Features" >> CHANGELOG.md
+          echo "- Complete offline task evaluation framework" >> CHANGELOG.md
+          echo "- ChatGPT API integration with deterministic settings" >> CHANGELOG.md
+          echo "- Manual Copilot evaluation workflow" >> CHANGELOG.md
+          echo "- Comprehensive scoring and reporting system" >> CHANGELOG.md
+          echo "- CI/CD pipeline with automated quality checks" >> CHANGELOG.md
+        fi
+
+        # Store changelog for use in release
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat CHANGELOG.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create release notes
+      run: |
+        echo "Creating comprehensive release notes..."
+
+        cat > RELEASE_NOTES.md << 'EOF'
+        # Release ${{ steps.version.outputs.version }}
+
+        ## Overview
+        This release of the ChatGPT vs Microsoft Copilot evaluation harness includes the following components:
+
+        ### Core Features
+        - **Offline Task Evaluation**: Complete framework for evaluating AI assistants on structured tasks
+        - **Provider Abstraction**: Support for ChatGPT API and manual Copilot evaluation
+        - **Objective Scoring**: 105-point scoring rubric with detailed breakdowns
+        - **Automated Reporting**: Markdown and JSON report generation
+
+        ### Evaluation Tasks
+        - **Task 1**: Metrics calculation from CSV data (40 points)
+        - **Task 2**: SSN regex pattern validation (30 points)
+        - **Task 3**: Executive summary structure and tone (20 points)
+        - **Stability Bonus**: Multi-run consistency analysis (5 points)
+
+        ### CI/CD Pipeline
+        - Automated benchmark execution
+        - Manual evaluation workflow orchestration
+        - Dependency management and security scanning
+        - Performance regression detection
+
+        ## Installation
+
+        ```bash
+        # Install from PyPI (when available)
+        pip install bench-harness
+
+        # Or install from source
+        git clone https://github.com/your-org/assistEval.git
+        cd assistEval
+        uv sync --all-extras
+        ```
+
+        ## Quick Start
+
+        ```bash
+        # Run ChatGPT benchmark
+        python scripts/run_bench.py run --provider chatgpt --test-set offline
+
+        # Generate report
+        python scripts/make_report.py --results results/ --output report.md
+
+        # Validate test definitions
+        python scripts/run_bench.py validate --test bench/tests/offline/task1_metrics.yaml
+        ```
+
+        ## Configuration
+
+        Set your OpenAI API key:
+        ```bash
+        export OPENAI_API_KEY="your-api-key-here"
+        ```
+
+        ## Documentation
+
+        - [Manual Evaluation Guide](docs/MANUAL_EVALUATION.md)
+        - [Configuration Reference](configs/)
+        - [Test Case Schema](schemas/)
+
+        EOF
+
+        # Append changelog
+        echo "" >> RELEASE_NOTES.md
+        cat CHANGELOG.md >> RELEASE_NOTES.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease || false }}
+        files: |
+          dist/*
+          CHANGELOG.md
+          RELEASE_NOTES.md
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report-${{ steps.version.outputs.version }}
+        path: |
+          htmlcov/
+          coverage.xml
+        retention-days: 90
+
+    - name: Create release summary
+      run: |
+        echo "## 🚀 Release ${{ steps.version.outputs.version }} Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Release Assets" >> $GITHUB_STEP_SUMMARY
+        echo "- Distribution packages built and uploaded" >> $GITHUB_STEP_SUMMARY
+        echo "- Release notes generated with changelog" >> $GITHUB_STEP_SUMMARY
+        echo "- Test coverage: $(grep -o 'pc_cov">[0-9]*%' htmlcov/index.html | head -1 | grep -o '[0-9]*%' || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Quality Checks" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Full test suite passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Code quality checks passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Benchmark validation successful" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Distribution build successful" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Update documentation if needed" >> $GITHUB_STEP_SUMMARY
+        echo "- Announce release to stakeholders" >> $GITHUB_STEP_SUMMARY
+        echo "- Monitor for any post-release issues" >> $GITHUB_STEP_SUMMARY
+
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚨 Release ${{ steps.version.outputs.version }} Failed`,
+            body: `## Release Failure Alert\n\n` +
+                  `The release workflow for version ${{ steps.version.outputs.version }} has failed.\n\n` +
+                  `**Workflow Run**: [#${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n\n` +
+                  `**Action Required**:\n` +
+                  `- Review the workflow logs for failure details\n` +
+                  `- Fix any issues identified\n` +
+                  `- Re-run the release workflow\n\n` +
+                  `**Failure Time**: ${new Date().toISOString()}`,
+            labels: ['release', 'failure', 'high-priority']
+          });

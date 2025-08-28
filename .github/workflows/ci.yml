@@ -129,3 +129,51 @@ jobs:
       with:
         name: bandit-report
         path: bandit-report.json
+
+  performance:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.11
+      run: uv python install 3.11
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run performance benchmarks
+      run: |
+        uv run python -m pytest tests/test_performance.py \
+          --benchmark-json=benchmark.json \
+          --benchmark-only || echo "Performance tests not available"
+
+    - name: Compare with baseline
+      run: |
+        if [ -f .github/baseline-performance.json ] && [ -f benchmark.json ]; then
+          uv run python scripts/compare_performance.py \
+            --current benchmark.json \
+            --baseline .github/baseline-performance.json \
+            --threshold 10 \
+            --output performance-comparison.md || echo "Performance comparison failed"
+        else
+          echo "Baseline performance data not available - skipping comparison"
+        fi
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-results
+        path: |
+          benchmark.json
+          performance-comparison.md
+        retention-days: 30

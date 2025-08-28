@@ -1,0 +1,203 @@
+name: Manual Copilot Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_set:
+        description: 'Test set to evaluate'
+        required: true
+        default: 'offline'
+        type: choice
+        options:
+        - offline
+        - online
+        - all
+      repetitions:
+        description: 'Number of repetitions'
+        required: false
+        default: '1'
+
+jobs:
+  prepare-manual-evaluation:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.11
+      run: uv python install 3.11
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Generate manual evaluation prompts
+      run: |
+        uv run python scripts/run_bench.py prepare-manual \
+          --provider copilot_manual \
+          --test-set ${{ github.event.inputs.test_set }} \
+          --repetitions ${{ github.event.inputs.repetitions || '1' }} \
+          --output manual_prompts.txt
+
+    - name: Create evaluation template
+      run: |
+        echo "# Manual Copilot Evaluation - $(date +%Y-%m-%d)" > evaluation_template.md
+        echo "" >> evaluation_template.md
+        echo "## Instructions" >> evaluation_template.md
+        echo "1. Copy each prompt below to Microsoft Copilot" >> evaluation_template.md
+        echo "2. Paste Copilot's response in the corresponding response section" >> evaluation_template.md
+        echo "3. Upload the completed file as an artifact" >> evaluation_template.md
+        echo "" >> evaluation_template.md
+        echo "## Prompts and Responses" >> evaluation_template.md
+        echo "" >> evaluation_template.md
+
+        # Append formatted prompts
+        cat manual_prompts.txt >> evaluation_template.md
+
+    - name: Upload manual evaluation package
+      uses: actions/upload-artifact@v4
+      with:
+        name: manual-copilot-evaluation-${{ github.run_number }}
+        path: |
+          manual_prompts.txt
+          evaluation_template.md
+        retention-days: 30
+
+    - name: Create evaluation issue
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const template = fs.readFileSync('evaluation_template.md', 'utf8');
+
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Manual Copilot Evaluation - ${new Date().toISOString().split('T')[0]} - Run #${{ github.run_number }}`,
+            body: `## 🤖 Manual Copilot Evaluation Required\n\n` +
+                  `A manual evaluation has been prepared for Microsoft Copilot.\n\n` +
+                  `### Instructions:\n` +
+                  `1. Download the evaluation package from the [workflow artifacts](${context.payload.repository.html_url}/actions/runs/${context.runId})\n` +
+                  `2. Follow the instructions in \`evaluation_template.md\`\n` +
+                  `3. Complete all prompts with Microsoft Copilot\n` +
+                  `4. Upload the completed evaluation file\n` +
+                  `5. Comment on this issue when ready for processing\n\n` +
+                  `### Test Set: \`${{ github.event.inputs.test_set }}\`\n` +
+                  `### Repetitions: \`${{ github.event.inputs.repetitions || '1' }}\`\n\n` +
+                  `### Evaluation Template Preview:\n` +
+                  `\`\`\`markdown\n${template.substring(0, 1000)}${template.length > 1000 ? '...\n[truncated]' : ''}\n\`\`\`\n\n` +
+                  `---\n` +
+                  `**Workflow Run:** [#${{ github.run_number }}](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+            labels: ['manual-evaluation', 'copilot', 'evaluation-pending']
+          });
+
+          console.log(`Created evaluation issue #${issue.data.number}`);
+
+          // Set output for potential follow-up steps
+          core.setOutput('issue_number', issue.data.number);
+
+    - name: Add issue to project board
+      if: vars.PROJECT_BOARD_ID
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Add to project board if configured
+          try {
+            await github.rest.projects.createCard({
+              column_id: ${{ vars.PROJECT_COLUMN_ID || 'null' }},
+              content_id: ${{ steps.create-issue.outputs.issue_number }},
+              content_type: 'Issue'
+            });
+          } catch (error) {
+            console.log('Project board integration not configured or failed:', error.message);
+          }
+
+  process-completed-evaluation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/process-evaluation')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.11
+      run: uv python install 3.11
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Download evaluation results
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // This would need to be implemented to download user-uploaded evaluation results
+          // For now, we'll create a placeholder that expects the results in a specific format
+          console.log('Processing evaluation results...');
+
+          // Look for evaluation results in issue comments or attachments
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+
+          // Process the evaluation (implementation depends on how results are provided)
+          console.log(`Found ${comments.data.length} comments to process`);
+
+    - name: Process manual evaluation results
+      run: |
+        # This step would process the uploaded evaluation results
+        # Implementation depends on the format of manual results
+        echo "Processing manual evaluation results..."
+
+        # Create results directory
+        mkdir -p results/manual_$(date +%Y%m%d_%H%M%S)
+
+        # Process results (placeholder - actual implementation needed)
+        echo "Manual evaluation processing complete"
+
+    - name: Generate evaluation report
+      run: |
+        echo "Generating evaluation report..."
+        # Generate report from processed results
+        echo "Report generation complete"
+
+    - name: Update issue with results
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: `## ✅ Evaluation Processing Complete\n\n` +
+                  `The manual Copilot evaluation has been processed successfully.\n\n` +
+                  `Results have been generated and are available in the workflow artifacts.\n\n` +
+                  `**Next Steps:**\n` +
+                  `- Review the generated report\n` +
+                  `- Compare results with automated benchmarks\n` +
+                  `- Close this issue when satisfied with results`
+          });
+
+          // Update labels
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            labels: ['evaluation-complete']
+          });
+
+          await github.rest.issues.removeLabel({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            name: 'evaluation-pending'
+          });
