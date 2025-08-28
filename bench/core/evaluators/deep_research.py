@@ -115,14 +115,16 @@ class DeepResearchEvaluator(BaseEvaluator):
 
         for i, step in enumerate(research_plan):
             if not isinstance(step, dict):
-                field_issues.append(f"Step {i+1} is not an object")
+                field_issues.append(f"Step {i + 1} is not an object")
                 continue
 
             missing_fields = [field for field in required_fields if field not in step]
             if not missing_fields:
                 valid_steps += 1
             else:
-                field_issues.append(f"Step {i+1} missing: {', '.join(missing_fields)}")
+                field_issues.append(
+                    f"Step {i + 1} missing: {', '.join(missing_fields)}"
+                )
 
         if plan_count > 0:
             field_completeness = valid_steps / plan_count
@@ -298,14 +300,15 @@ class DeepResearchEvaluator(BaseEvaluator):
                     year = int(year_matches[-1])  # Take the last year found
                     if year >= cutoff_year:
                         recent_sources += 1
-                    details[f"source_{i+1}_year"] = year
+                    details[f"source_{i + 1}_year"] = year
                 except ValueError:
+                    yr_info = year_matches[-1]
                     year_issues.append(
-                        f"Source {i+1}: Could not parse year from '{year_matches[-1]}'"
+                        f"Source {i + 1}: Could not parse year from '{yr_info}'"
                     )
             else:
                 year_issues.append(
-                    f"Source {i+1}: No year found in '{source_text[:100]}...'"
+                    f"Source {i + 1}: No year found in '{source_text[:100]}...'"
                 )
 
         details["recent_sources"] = recent_sources

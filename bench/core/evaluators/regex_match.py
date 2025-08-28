@@ -293,7 +293,7 @@ class RegexMatchEvaluator(BaseEvaluator):
                     }
                 )
             except Exception as e:
-                result.add_error(f"Error testing line {i+1}: {e}")
+                result.add_error(f"Error testing line {i + 1}: {e}")
                 line_results.append(
                     {
                         "line": line,

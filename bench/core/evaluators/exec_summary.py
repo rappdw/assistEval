@@ -164,7 +164,7 @@ class ExecSummaryEvaluator(BaseEvaluator):
                 result.details["word_count_status"] = "pass"
             else:
                 result.add_warning(
-                    f"Summary has {word_count} words, " f"expected 120-160 words"
+                    f"Summary has {word_count} words, expected 120-160 words"
                 )
                 result.details["word_count_status"] = "fail"
             result.details["summary_word_count"] = word_count
