@@ -177,4 +177,7 @@ api_keys.json
 # Security reports
 bandit-report.json
 
+# results
+results/
+
 scratchpad.md

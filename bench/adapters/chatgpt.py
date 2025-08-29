@@ -46,8 +46,8 @@ class ChatGPTProvider(Provider):
 
         # Set default options
         self.model = kwargs.get("model", "gpt-4")
-        self.temperature = kwargs.get("temperature", 0)
-        self.max_tokens = kwargs.get("max_tokens", 1200)
+        self.temperature = kwargs.get("temperature")  # None if not specified
+        self.max_completion_tokens = kwargs.get("max_completion_tokens", 1200)
         self.seed = kwargs.get("seed", 42)
         self.timeout_seconds = kwargs.get("timeout_seconds", 60)
 
@@ -88,11 +88,17 @@ class ChatGPTProvider(Provider):
                 {"role": "system", "content": modified_system},
                 {"role": "user", "content": user},
             ],
-            "temperature": options.get("temperature", self.temperature),
-            "max_tokens": options.get("max_tokens", self.max_tokens),
+            "max_completion_tokens": options.get(
+                "max_completion_tokens", self.max_completion_tokens
+            ),
             "seed": options.get("seed", self.seed),
             "timeout": options.get("timeout_seconds", self.timeout_seconds),
         }
+
+        # Only add temperature if specified (GPT-5 doesn't support temperature=0)
+        temperature = options.get("temperature", self.temperature)
+        if temperature is not None:
+            request_params["temperature"] = temperature
 
         # Add JSON response format if required
         if capabilities.get("json_required", False):
@@ -127,11 +133,21 @@ class ChatGPTProvider(Provider):
                 )
 
                 # Extract response text
-                if response.choices and response.choices[0].message.content:
-                    raw_text = response.choices[0].message.content
-                    return {"raw_text": raw_text}
+                if response.choices and len(response.choices) > 0:
+                    message = response.choices[0].message
+                    if message.content:
+                        raw_text = message.content
+                        return {"raw_text": raw_text}
+                    else:
+                        # Debug empty content
+                        raise ProviderConfigurationError(
+                            f"Empty content from OpenAI API. Message: {message}, "
+                            f"Finish reason: {response.choices[0].finish_reason}"
+                        )
                 else:
-                    raise ProviderConfigurationError("Empty response from OpenAI API")
+                    raise ProviderConfigurationError(
+                        f"No choices in OpenAI API response. Response: {response}"
+                    )
 
             except Exception as e:
                 error_message = str(e).lower()

@@ -2,17 +2,17 @@ version: "1.0"
 description: "Default evaluation matrix for ChatGPT vs Copilot comparison"
 
 matrix:
-  - provider: "chatgpt"
+  - provider: "chatgpt_manual"
     test_set: "offline"
-    repetitions: 3          # For stability analysis
-    parallel: false         # Sequential execution
+    repetitions: 1          # For stability analysis
+    parallel: false         # Manual input required
 
   - provider: "copilot_manual"
     test_set: "offline"
-    repetitions: 3          # For stability analysis
+    repetitions: 1          # For stability analysis
     parallel: false         # Manual input required
 
-  - provider: "chatgpt"
+  - provider: "chatgpt_manual"
     test_set: "online"      # Optional deep research task
     repetitions: 1          # Single run for online tasks
     parallel: false

@@ -80,7 +80,7 @@ line_length = 88
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -92,7 +92,6 @@ select = [
     "UP",  # pyupgrade
     "S",   # bandit
     "B",   # flake8-bugbear
-    "A",   # flake8-builtins
     "C4",  # flake8-comprehensions
     "T20", # flake8-print
 ]
@@ -104,6 +103,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+"bench/adapters/*_manual.py" = ["T201"]
+"tests/test_evaluation_system.py" = ["T201"]
 
 [tool.ruff.format]
 # Use black-compatible formatting

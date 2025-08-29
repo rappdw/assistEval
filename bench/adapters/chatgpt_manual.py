@@ -1,4 +1,4 @@
-"""Manual Copilot provider adapter for paste-based evaluation.
+"""Manual ChatGPT provider adapter for paste-based evaluation.
 
 This module implements a manual provider that displays prompts and collects
 responses via copy-paste, useful when no API is available.
@@ -17,20 +17,20 @@ from rich.text import Text
 from bench.adapters.base import Provider, ProviderError, ProviderTimeoutError
 
 
-class CopilotManualProvider(Provider):
-    """Manual Copilot provider for paste-based interaction.
+class ChatGPTManualProvider(Provider):
+    """Manual ChatGPT provider for paste-based interaction.
 
     Displays prompts to the user and collects responses via manual paste,
     storing raw text for evaluation when API access is not available.
     """
 
     def __init__(self, **kwargs: Any) -> None:
-        """Initialize manual Copilot provider.
+        """Initialize manual ChatGPT provider.
 
         Args:
             **kwargs: Configuration options for manual interaction
         """
-        super().__init__(name="Copilot (Manual)", **kwargs)
+        super().__init__(name="ChatGPT (Manual)", **kwargs)
         self.console = Console()
         self.timeout = kwargs.get("timeout", 300)  # 5 minutes default
         self.display_format = kwargs.get("display_format", "rich")
@@ -111,28 +111,50 @@ class CopilotManualProvider(Provider):
             user: User prompt with task
             capabilities: Capability constraints to highlight
         """
+        print("=" * 80)
+        print("CHATGPT MANUAL EVALUATION")
+        print("=" * 80)
+        print()
 
         # Display capability constraints
         constraints = self._format_constraints_plain(capabilities)
         if constraints:
-            pass
+            print("IMPORTANT CONSTRAINTS:")
+            print("-" * 20)
+            print(constraints)
+            print()
 
-        # Combine system and user prompts for Copilot
-        combined_prompt = self._combine_prompts_for_copilot(system, user)
+        # Combine system and user prompts for ChatGPT
+        combined_prompt = self._combine_prompts_for_chatgpt(system, user)
 
         # Copy to clipboard on macOS
         clipboard_success = self._copy_to_clipboard(combined_prompt)
 
+        print("PROMPT TO COPY:")
+        print("-" * 15)
+        print(combined_prompt)
+        print()
+
         if clipboard_success:
-            pass
+            print("✅ Prompt copied to clipboard!")
         else:
-            pass
+            print("⚠️  Could not copy to clipboard - please copy manually")
+        print()
 
         # Display instructions
+        print("INSTRUCTIONS:")
+        print("-" * 13)
         if clipboard_success:
-            pass
+            print("1. Paste the prompt into ChatGPT (already copied to clipboard)")
         else:
-            pass
+            print("1. Copy the prompt above and paste it into ChatGPT")
+        print("2. Wait for ChatGPT's complete response")
+        print("3. Copy ChatGPT's entire response")
+        print(
+            "4. Press Enter, and the results in the clipboard will be "
+            "copied automatically"
+        )
+        print()
 
     def _display_prompt_rich(
         self, system: str, user: str, capabilities: dict[str, Any]
@@ -145,7 +167,7 @@ class CopilotManualProvider(Provider):
             capabilities: Capability constraints to highlight
         """
         # Display header
-        header = Text("Microsoft Copilot Manual Evaluation", style="bold blue")
+        header = Text("ChatGPT Manual Evaluation", style="bold green")
         self.console.print(Panel(header, expand=False))
         self.console.print()
 
@@ -162,8 +184,8 @@ class CopilotManualProvider(Provider):
             )
             self.console.print()
 
-        # Combine system and user prompts for Copilot
-        combined_prompt = self._combine_prompts_for_copilot(system, user)
+        # Combine system and user prompts for ChatGPT
+        combined_prompt = self._combine_prompts_for_chatgpt(system, user)
 
         # Copy to clipboard on macOS
         clipboard_success = self._copy_to_clipboard(combined_prompt)
@@ -188,14 +210,11 @@ class CopilotManualProvider(Provider):
         if clipboard_success:
             instructions = Text.assemble(
                 ("1. ", "bold"),
-                (
-                    "Paste the prompt into Microsoft Copilot "
-                    "(already copied to clipboard)\n"
-                ),
+                ("Paste the prompt into ChatGPT (already copied to clipboard)\n"),
                 ("2. ", "bold"),
-                ("Wait for Copilot's complete response\n"),
+                ("Wait for ChatGPT's complete response\n"),
                 ("3. ", "bold"),
-                ("Copy Copilot's entire response\n"),
+                ("Copy ChatGPT's entire response\n"),
                 ("4. ", "bold"),
                 (
                     "Press Enter, and the results in the clipboard will be "
@@ -205,11 +224,11 @@ class CopilotManualProvider(Provider):
         else:
             instructions = Text.assemble(
                 ("1. ", "bold"),
-                ("Copy the prompt above and paste it into Microsoft Copilot\n"),
+                ("Copy the prompt above and paste it into ChatGPT\n"),
                 ("2. ", "bold"),
-                ("Wait for Copilot's complete response\n"),
+                ("Wait for ChatGPT's complete response\n"),
                 ("3. ", "bold"),
-                ("Copy Copilot's entire response\n"),
+                ("Copy ChatGPT's entire response\n"),
                 ("4. ", "bold"),
                 (
                     "Press Enter, and the results in the clipboard will be "
@@ -278,15 +297,15 @@ class CopilotManualProvider(Provider):
 
         return "\n".join(constraints) if constraints else ""
 
-    def _combine_prompts_for_copilot(self, system: str, user: str) -> str:
-        """Combine system and user prompts into single prompt for Copilot.
+    def _combine_prompts_for_chatgpt(self, system: str, user: str) -> str:
+        """Combine system and user prompts into single prompt for ChatGPT.
 
         Args:
             system: System prompt with constraints and context
             user: User prompt with the evaluation task
 
         Returns:
-            Combined prompt suitable for Copilot
+            Combined prompt suitable for ChatGPT
         """
         parts = []
 
@@ -354,7 +373,7 @@ class CopilotManualProvider(Provider):
         try:
             # Wait for user to press Enter, then check clipboard
             self.console.print(
-                "[bold]Press Enter when you have copied Copilot's response "
+                "[bold]Press Enter when you have copied ChatGPT's response "
                 "to the clipboard:[/bold]"
             )
             input()  # Wait for user to press Enter
@@ -406,7 +425,7 @@ class CopilotManualProvider(Provider):
             Raw response text from user
         """
         self.console.print(
-            "[bold]Paste Copilot's response below (press Enter twice to submit):[/bold]"
+            "[bold]Paste ChatGPT's response below (press Enter twice to submit):[/bold]"
         )
 
         lines = []

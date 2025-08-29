@@ -95,7 +95,7 @@ def _get_provider_class(provider_type: str) -> type[Provider]:
     """Get provider class by type name.
 
     Args:
-        provider_type: Type of provider ('chatgpt', 'copilot_manual')
+        provider_type: Type of provider ('chatgpt', 'chatgpt_manual', 'copilot_manual')
 
     Returns:
         Provider class
@@ -107,6 +107,10 @@ def _get_provider_class(provider_type: str) -> type[Provider]:
         from bench.adapters.chatgpt import ChatGPTProvider
 
         return ChatGPTProvider
+    elif provider_type == "chatgpt_manual":
+        from bench.adapters.chatgpt_manual import ChatGPTManualProvider
+
+        return ChatGPTManualProvider
     elif provider_type == "copilot_manual":
         from bench.adapters.copilot_manual import CopilotManualProvider
 

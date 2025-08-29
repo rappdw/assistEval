@@ -71,8 +71,10 @@ class MetricsCSVEvaluator(BaseEvaluator):
             result.add_error("No answer key provided for metrics evaluation")
             return result
 
-        # Extract metrics from response
-        metrics = self.safe_extract_field(response_data, "metrics", {})
+        # Extract metrics from response - try both possible field names
+        metrics = self.safe_extract_field(response_data, "task1_data_metrics", {})
+        if not metrics:
+            metrics = self.safe_extract_field(response_data, "metrics", {})
         expected_metrics = answer_key.get("metrics", {})
 
         # Evaluate numeric metrics with tolerance
