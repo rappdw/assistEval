@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Evaluation Analytics Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .insight-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .insight-card:hover {
+            transform: translateY(-2px);
+        }
+        .severity-critical { border-left: 4px solid #ef4444; }
+        .severity-warning { border-left: 4px solid #f59e0b; }
+        .severity-info { border-left: 4px solid #3b82f6; }
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .trend-up { color: #10b981; }
+        .trend-down { color: #ef4444; }
+        .trend-stable { color: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+                        AI Evaluation Analytics
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500">
+                        Last updated: <span id="last-updated">Loading...</span>
+                    </div>
+                    <button id="refresh-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="dashboard-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Performance Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="metric-card text-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Evaluations</p>
+                        <p id="total-evaluations" class="text-3xl font-bold">-</p>
+                    </div>
+                    <i class="fas fa-tasks text-4xl text-blue-200"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Average Score</p>
+                        <p id="average-score" class="text-3xl font-bold text-gray-900">-</p>
+                        <p id="score-trend" class="text-sm mt-1">
+                            <i class="fas fa-arrow-up trend-up"></i>
+                            <span class="trend-up">+2.3%</span>
+                        </p>
+                    </div>
+                    <i class="fas fa-star text-4xl text-yellow-400"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Active Providers</p>
+                        <p id="provider-count" class="text-3xl font-bold text-gray-900">-</p>
+                    </div>
+                    <i class="fas fa-robot text-4xl text-green-500"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Analysis Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">Performance Trends</h2>
+                    <select id="trend-provider-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm">
+                        <option value="">Select Provider...</option>
+                    </select>
+                </div>
+                <div id="trend-chart" style="height: 400px;"></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">Provider Comparison</h2>
+                    <div class="flex space-x-2">
+                        <select id="comparison-task-select" class="border border-gray-300 rounded-md px-3 py-1 text-sm">
+                            <option value="">All Tasks</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="comparison-chart" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <!-- Insights Panel -->
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                    AI-Generated Insights
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <div id="insights-loading" class="loading-spinner hidden"></div>
+                    <span id="insights-count" class="text-sm text-gray-500">0 insights</span>
+                </div>
+            </div>
+            <div id="insights-list" class="space-y-4">
+                <!-- Insights will be populated here -->
+            </div>
+        </div>
+
+        <!-- Detailed Analytics -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-chart-bar mr-2 text-blue-500"></i>
+                    Statistical Tests
+                </h3>
+                <div id="statistical-tests" class="space-y-3">
+                    <!-- Statistical test results will be populated here -->
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+                    Regression Alerts
+                </h3>
+                <div id="regression-alerts" class="space-y-3">
+                    <!-- Regression alerts will be populated here -->
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-table mr-2 text-green-500"></i>
+                    Performance Matrix
+                </h3>
+                <div id="performance-matrix">
+                    <!-- Performance matrix will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl">
+            <div class="flex items-center space-x-3">
+                <div class="loading-spinner"></div>
+                <span class="text-gray-700">Loading analytics data...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

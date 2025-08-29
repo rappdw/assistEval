@@ -424,7 +424,10 @@ def main() -> None:
         "--repetitions",
         type=int,
         default=1,
-        help="Number of repetitions (default: 1)",
+        help="""Benchmarking CLI for the evaluation harness.
+
+This script provides command-line interface for running benchmarks,
+validating configurations, and managing evaluation results.""",
     )
     prepare_manual_parser.add_argument(
         "--output",
@@ -466,6 +469,85 @@ def main() -> None:
         help="Configuration directory (default: configs)",
     )
 
+    # Analytics command
+    analytics_parser = subparsers.add_parser(
+        "analytics", help="Analytics and insights commands"
+    )
+    analytics_subparsers = analytics_parser.add_subparsers(
+        dest="analytics_command", help="Analytics subcommands"
+    )
+
+    # Dashboard subcommand
+    dashboard_parser = analytics_subparsers.add_parser(
+        "dashboard", help="Start analytics dashboard"
+    )
+    dashboard_parser.add_argument(
+        "--host", default="localhost", help="Dashboard host (default: localhost)"
+    )
+    dashboard_parser.add_argument(
+        "--port", type=int, default=5000, help="Dashboard port (default: 5000)"
+    )
+    dashboard_parser.add_argument(
+        "--debug", action="store_true", help="Enable debug mode"
+    )
+
+    # Insights subcommand
+    insights_parser = analytics_subparsers.add_parser(
+        "insights", help="Generate AI insights"
+    )
+    insights_parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=Path("results"),
+        help="Results directory to analyze (default: results)",
+    )
+    insights_parser.add_argument(
+        "--output", type=Path, help="Output file for insights (JSON format)"
+    )
+    insights_parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=0.7,
+        help="Minimum confidence threshold for insights (default: 0.7)",
+    )
+
+    # Trends subcommand
+    trends_parser = analytics_subparsers.add_parser(
+        "trends", help="Analyze performance trends"
+    )
+    trends_parser.add_argument(
+        "--provider", required=True, help="Provider to analyze trends for"
+    )
+    trends_parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=Path("results"),
+        help="Results directory to analyze (default: results)",
+    )
+    trends_parser.add_argument(
+        "--output", type=Path, help="Output file for trend analysis (JSON format)"
+    )
+
+    # Compare subcommand
+    compare_parser = analytics_subparsers.add_parser(
+        "compare", help="Compare provider performance"
+    )
+    compare_parser.add_argument(
+        "--providers", nargs="+", required=True, help="Providers to compare"
+    )
+    compare_parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=Path("results"),
+        help="Results directory to analyze (default: results)",
+    )
+    compare_parser.add_argument(
+        "--statistical-test",
+        choices=["auto", "ttest", "mannwhitney"],
+        default="auto",
+        help="Statistical test to use for comparison (default: auto)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -488,6 +570,8 @@ def main() -> None:
             handle_prepare_manual_command(args, console)
         elif args.command == "process-manual":
             handle_process_manual_command(args, console)
+        elif args.command == "analytics":
+            handle_analytics_command(args, console)
 
     except (ConfigurationError, TestExecutionError) as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -744,6 +828,165 @@ def handle_report_command(args: argparse.Namespace, console: Console) -> None:
         )
     except Exception as e:
         console.print(f"[red]Error generating reports: {e}[/red]")
+
+
+def handle_analytics_command(args: argparse.Namespace, console: Console) -> None:
+    """Handle analytics subcommands."""
+    if not args.analytics_command:
+        console.print("[red]Error: Analytics subcommand required[/red]")
+        console.print("Available subcommands: dashboard, insights, trends, compare")
+        return
+
+    if args.analytics_command == "dashboard":
+        try:
+            from bench.web.app import create_app
+
+            console.print(
+                f"[green]Starting analytics dashboard at http://{args.host}:{args.port}[/green]"
+            )
+            console.print("[yellow]Press Ctrl+C to stop the server[/yellow]")
+
+            app = create_app()
+            app.run(host=args.host, port=args.port, debug=args.debug)
+        except ImportError as e:
+            console.print(
+                f"[red]Error: Dashboard dependencies not available: {e}[/red]"
+            )
+        except Exception as e:
+            console.print(f"[red]Error starting dashboard: {e}[/red]")
+
+    elif args.analytics_command == "insights":
+        try:
+            from bench.analytics.insights import InsightsEngine
+
+            console.print("[blue]Generating AI insights...[/blue]")
+
+            engine = InsightsEngine()
+
+            # Load evaluation history (placeholder - would load from results directory)
+            evaluation_history: list[dict[str, Any]] = []
+            provider_configs: dict[str, Any] = {}
+
+            insights = engine.generate_insights(evaluation_history, provider_configs)
+
+            # Filter by confidence
+            filtered_insights = [
+                insight
+                for insight in insights
+                if insight.confidence >= args.min_confidence
+            ]
+
+            if args.output:
+                # Convert insights to dict for JSON serialization
+                insights_data = [
+                    {
+                        "title": insight.title,
+                        "description": insight.description,
+                        "category": insight.category,
+                        "severity": insight.severity,
+                        "confidence": insight.confidence,
+                        "recommendations": insight.recommendations,
+                        "evidence": insight.evidence,
+                        "timestamp": insight.timestamp.isoformat(),
+                    }
+                    for insight in filtered_insights
+                ]
+
+                with open(args.output, "w") as f:
+                    json.dump(insights_data, f, indent=2)
+                console.print(f"[green]Insights saved to {args.output}[/green]")
+            else:
+                # Print to console
+                if not filtered_insights:
+                    console.print(
+                        "[yellow]No insights generated with the specified "
+                        "confidence threshold[/yellow]"
+                    )
+                    return
+
+                for insight in filtered_insights:
+                    severity_color = {
+                        "critical": "red",
+                        "warning": "yellow",
+                        "info": "blue",
+                    }.get(insight.severity, "white")
+
+                    console.print(
+                        f"\n[{severity_color}][{insight.severity.upper()}] "
+                        f"{insight.title}[/{severity_color}]"
+                    )
+                    console.print(f"Confidence: {insight.confidence:.2f}")
+                    console.print(f"Description: {insight.description}")
+                    if insight.recommendations:
+                        console.print("Recommendations:")
+                        for rec in insight.recommendations[:3]:
+                            console.print(f"  • {rec}")
+
+        except ImportError as e:
+            console.print(
+                f"[red]Error: Analytics dependencies not available: {e}[/red]"
+            )
+        except Exception as e:
+            console.print(f"[red]Error generating insights: {e}[/red]")
+
+    elif args.analytics_command == "trends":
+        try:
+            console.print(
+                f"[blue]Analyzing trends for provider: {args.provider}[/blue]"
+            )
+            console.print(f"Results directory: {args.results_dir}")
+
+            # TODO: Load evaluation data for the specified provider
+            # Placeholder for trend analysis
+            trends = {
+                "provider": args.provider,
+                "trend_analysis": "Not implemented yet - requires integration "
+                "with evaluation data",
+                "message": "Trend analysis will be implemented when integrated "
+                "with evaluation results storage",
+            }
+
+            if args.output:
+                with open(args.output, "w") as f:
+                    json.dump(trends, f, indent=2)
+                console.print(f"[green]Trend analysis saved to {args.output}[/green]")
+            else:
+                console.print(json.dumps(trends, indent=2))
+
+        except ImportError as e:
+            console.print(
+                f"[red]Error: Analytics dependencies not available: {e}[/red]"
+            )
+        except Exception as e:
+            console.print(f"[red]Error analyzing trends: {e}[/red]")
+
+    elif args.analytics_command == "compare":
+        try:
+            console.print(
+                f"[blue]Comparing providers: {', '.join(args.providers)}[/blue]"
+            )
+            console.print(f"Results directory: {args.results_dir}")
+            console.print(f"Statistical test: {args.statistical_test}")
+
+            # TODO: Load evaluation data for comparison
+            # Placeholder for comparison analysis
+            comparison = {
+                "providers": args.providers,
+                "statistical_test": args.statistical_test,
+                "comparison_results": "Not implemented yet - requires integration "
+                "with evaluation data",
+                "message": "Provider comparison will be implemented when integrated "
+                "with evaluation results storage",
+            }
+
+            console.print(json.dumps(comparison, indent=2))
+
+        except ImportError as e:
+            console.print(
+                f"[red]Error: Analytics dependencies not available: {e}[/red]"
+            )
+        except Exception as e:
+            console.print(f"[red]Error comparing providers: {e}[/red]")
 
 
 if __name__ == "__main__":
